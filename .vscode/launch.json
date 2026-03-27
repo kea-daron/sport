@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flutter",
+      "request": "launch",
+      "type": "dart",
+      "toolArgs": [
+        "--dart-define=LIVE_SCORE_API_KEY=f5133f2291msh011e18c436f75a3p17a014jsnc98ab760a37"
+      ]
+    }
+  ]
+}
