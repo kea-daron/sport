@@ -121,6 +121,14 @@ class LiveScoreService {
       const ['T2.0.Nm', 'T2.0.name', 'awayTeam', 'away_name'],
       fallback: 'Away',
     );
+    final homeTeamImage = _readString(
+      event,
+      const ['T1.0.Img', 'T1.0.image', 'homeTeamImage', 'home_image'],
+    );
+    final awayTeamImage = _readString(
+      event,
+      const ['T2.0.Img', 'T2.0.image', 'awayTeamImage', 'away_image'],
+    );
 
     final homeScore = _readString(
       event,
@@ -144,6 +152,8 @@ class LiveScoreService {
       country: country,
       homeTeam: homeTeam,
       awayTeam: awayTeam,
+      homeTeamImage: homeTeamImage,
+      awayTeamImage: awayTeamImage,
       homeScore: homeScore,
       awayScore: awayScore,
       status: status,

@@ -489,11 +489,13 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       _buildTeamRow(
                         teamName: match.homeTeam,
+                        teamImage: match.homeTeamImage,
                         score: showScores ? match.homeScore : _scheduledTime(match),
                       ),
                       const SizedBox(height: 14),
                       _buildTeamRow(
                         teamName: match.awayTeam,
+                        teamImage: match.awayTeamImage,
                         score: showScores ? match.awayScore : '',
                       ),
                     ],
@@ -509,27 +511,14 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildTeamRow({required String teamName, required String score}) {
+  Widget _buildTeamRow({
+    required String teamName,
+    required String teamImage,
+    required String score,
+  }) {
     return Row(
       children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white.withOpacity(0.08),
-          ),
-          child: Center(
-            child: Text(
-              _initials(teamName),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ),
+        _buildTeamBadge(teamName: teamName, teamImage: teamImage),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -552,6 +541,56 @@ class _HomePageState extends State<HomePage> {
           ),
       ],
     );
+  }
+
+  Widget _buildTeamBadge({
+    required String teamName,
+    required String teamImage,
+  }) {
+    final imageUrl = _teamImageUrl(teamImage);
+
+    return Container(
+      width: 28,
+      height: 28,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withOpacity(0.08),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: imageUrl == null
+          ? _buildTeamInitials(teamName)
+          : Image.network(
+              imageUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return _buildTeamInitials(teamName);
+              },
+            ),
+    );
+  }
+
+  Widget _buildTeamInitials(String teamName) {
+    return Center(
+      child: Text(
+        _initials(teamName),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  String? _teamImageUrl(String imagePath) {
+    if (imagePath.trim().isEmpty) {
+      return null;
+    }
+
+    final sourceUrl = Uri.encodeComponent(
+      'https://storage.livescore.com/images/team/medium/$imagePath',
+    );
+    return 'https://getimage.membertsd.workers.dev/?url=$sourceUrl';
   }
 
   String _statusLabel(MatchItem match) {
@@ -624,12 +663,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildFeaturedHighlights() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
@@ -650,87 +689,232 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 160,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: 3,
-            itemBuilder: (context, index) {
-              final titles = [
-                'Nebraska takes lead\nwith 2.2 seconds\nleft...',
-                '...and wins when\nVandy\'s last-second\nheave JUST misses',
-                'Durant pas\nJordan for\nNBA\'s scor',
-              ];
-
-              return Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: Container(
-                  width: 140,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E1E1E),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.1),
+          const SizedBox(height: 14),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF171717),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Colors.white.withOpacity(0.08)),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHighlightPoster(),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(18, 16, 18, 6),
+                  child: Text(
+                    'March Madness Round of 32: Best bets, survivor picks for Sunday',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      height: 1.35,
                     ),
                   ),
-                  child: Stack(
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Text(
+                    '6h ago . 5m read',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.68),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+                  child: Row(
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
-                          'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=300&fit=crop',
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withOpacity(0.8),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              titles[index],
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                height: 1.2,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '6h ago ${index == 0 ? '2m read' : ''}',
-                              style: const TextStyle(
-                                color: Colors.white60,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
+                      _buildMetaStat(Icons.favorite_border, '123k'),
+                      const SizedBox(width: 18),
+                      _buildMetaStat(Icons.mode_comment_outlined, '92'),
+                      const Spacer(),
+                      Icon(
+                        Icons.more_horiz,
+                        color: Colors.white.withOpacity(0.85),
                       ),
                     ],
                   ),
                 ),
-              );
-            },
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHighlightPoster() {
+    return Container(
+      height: 245,
+      decoration: const BoxDecoration(
+        color: Color(0xFFF5F3EF),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            left: 0,
+            top: 0,
+            child: Container(
+              width: 190,
+              height: 200,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF0E4DAA), Color(0xFF2481F1)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: -30,
+            bottom: -10,
+            child: Transform.rotate(
+              angle: -0.75,
+              child: Container(
+                width: 170,
+                height: 70,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF2481F1),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 145,
+            top: -10,
+            child: Transform.rotate(
+              angle: 0.78,
+              child: Container(
+                width: 140,
+                height: 32,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF2481F1),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 18,
+            top: 16,
+            child: Text(
+              '........',
+              style: TextStyle(
+                color: const Color(0xFFF5F3EF).withOpacity(0.95),
+                letterSpacing: 4,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const Positioned(
+            right: 18,
+            top: 22,
+            child: Text(
+              'ALDENAIRE & PARTNERS',
+              style: TextStyle(
+                color: Colors.black87,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Positioned(
+            left: 18,
+            right: 18,
+            bottom: 44,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Text(
+                    'FOOTBALL',
+                    maxLines: 1,
+                    overflow: TextOverflow.visible,
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: MediaQuery.of(context).size.width < 380 ? 54 : 64,
+                      height: 0.95,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -2,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Positioned(
+            right: 22,
+            bottom: 22,
+            child: Text(
+              'HIGHLIGHT',
+              style: TextStyle(
+                color: Color(0xFF0E4DAA),
+                fontSize: 28,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -1,
+              ),
+            ),
+          ),
+          Positioned(
+            left: 18,
+            bottom: 18,
+            child: SizedBox(
+              width: 190,
+              height: 170,
+              child: Image.asset(
+                'assets/images/1.png',
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+          Positioned(
+            right: 20,
+            top: 76,
+            child: Text(
+              '....\n....',
+              style: TextStyle(
+                color: const Color(0xFF0E4DAA).withOpacity(0.9),
+                height: 0.8,
+                letterSpacing: 4,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Positioned(
+            left: 120,
+            bottom: 10,
+            child: Text(
+              '.............',
+              style: TextStyle(
+                color: const Color(0xFF0E4DAA).withOpacity(0.9),
+                letterSpacing: 4,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetaStat(IconData icon, String value) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.white.withOpacity(0.88), size: 20),
+        const SizedBox(width: 6),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -804,46 +988,37 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildBottomNav() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black,
-        border: Border(
-          top: BorderSide(
-            color: Colors.white.withOpacity(0.1),
-          ),
+    return BottomNavigationBar(
+      type: BottomNavigationBarType.fixed,
+      backgroundColor: const Color.fromARGB(255, 0, 0, 0),
+      selectedItemColor: Colors.yellow.shade600,
+      unselectedItemColor: Colors.white60,
+      currentIndex: _selectedIndex,
+      onTap: (index) {
+        setState(() {
+          _selectedIndex = index;
+        });
+      },
+      items: const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home_outlined),
+          label: 'Home',
         ),
-      ),
-      child: BottomNavigationBar(
-        backgroundColor: Colors.black,
-        selectedItemColor: Colors.yellow.shade600,
-        unselectedItemColor: Colors.white60,
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.description_outlined),
-            label: 'News',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.sports_soccer_outlined),
-            label: 'Sports',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.play_circle_outline),
-            label: 'Videos',
-          ),
-        ],
-      ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.description_outlined),
+          label: 'News',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.sports_soccer_outlined),
+          label: 'Sports',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.play_circle_outline),
+          label: 'Videos',
+        ),
+      ],
     );
-  }
+  } 
 }
 
 class BannerData {
