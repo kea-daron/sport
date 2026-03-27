@@ -14,12 +14,15 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final LiveScoreService _liveScoreService = const LiveScoreService();
+  static const int _initialMatchesCount = 5;
+  static const int _matchesPageSize = 5;
 
   int _selectedIndex = 0;
   late PageController _bannerController;
   int _currentBannerIndex = 0;
   late Timer _bannerTimer;
   late Future<List<MatchItem>> _matchesFuture;
+  int _visibleMatchesCount = _initialMatchesCount;
 
   final List<BannerData> bannerList = [
     BannerData(
@@ -69,6 +72,7 @@ class _HomePageState extends State<HomePage> {
     final future = _loadMatches();
     setState(() {
       _matchesFuture = future;
+      _visibleMatchesCount = _initialMatchesCount;
     });
     await future;
   }
@@ -293,12 +297,51 @@ class _HomePageState extends State<HomePage> {
                 );
               }
 
+              final visibleMatches = matches.take(_visibleMatchesCount).toList();
+              final hasMoreMatches = matches.length > visibleMatches.length;
+
               return Column(
-                children: matches.take(5).map(_buildMatchCard).toList(),
+                children: [
+                  ...visibleMatches.map(_buildMatchCard),
+                  if (hasMoreMatches) _buildShowMoreButton(matches.length),
+                ],
               );
             },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildShowMoreButton(int totalMatches) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton(
+          onPressed: () {
+            setState(() {
+              final nextCount = _visibleMatchesCount + _matchesPageSize;
+              _visibleMatchesCount = nextCount > totalMatches
+                  ? totalMatches
+                  : nextCount;
+            });
+          },
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(color: Colors.yellow.shade600),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+          child: Text(
+            'Show More',
+            style: TextStyle(
+              color: Colors.yellow.shade600,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -812,4 +855,3 @@ class BannerData {
     required this.title,
   });
 }
-
