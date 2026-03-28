@@ -145,8 +145,8 @@ class _LiveScorePageState extends State<LiveScorePage> {
   @override
   Widget build(BuildContext context) {
     final dateOptions = List<DateTime>.generate(
-      5,
-      (index) => _stripTime(DateTime.now().add(Duration(days: index - 2))),
+      7,
+      (index) => _stripTime(DateTime.now().add(Duration(days: index - 3))),
     );
 
     return Scaffold(
@@ -174,7 +174,7 @@ class _LiveScorePageState extends State<LiveScorePage> {
             _buildSportChooser(),
             const SizedBox(height: 18),
             _buildDateChooser(dateOptions),
-            const SizedBox(height: 22),
+            const SizedBox(height: 14),
             FutureBuilder<List<MatchItem>>(
               future: _matchesFuture,
               builder: (context, snapshot) {
@@ -336,16 +336,16 @@ class _LiveScorePageState extends State<LiveScorePage> {
 
   Widget _buildDateChooser(List<DateTime> dates) {
     return SizedBox(
-      height: 78,
+      height: 52,
       child: Row(
         children: [
           _buildLivePill(),
-          const SizedBox(width: 10),
+          const SizedBox(width: 6),
           Expanded(
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: dates.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              separatorBuilder: (_, __) => const SizedBox(width: 4),
               itemBuilder: (context, index) {
                 final date = dates[index];
                 final isSelected = !_isLiveMode && _isSameDate(date, _selectedDate);
@@ -354,13 +354,13 @@ class _LiveScorePageState extends State<LiveScorePage> {
                   onTap: () => _changeDate(date),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    width: 86,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                    width: 50,
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? const Color(0xFF1B1B1B)
                           : Colors.transparent,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -369,17 +369,17 @@ class _LiveScorePageState extends State<LiveScorePage> {
                           _topDateLabel(date),
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 13,
+                            fontSize: 9,
                             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 1),
                         Text(
                           _bottomDateLabel(date),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.82),
-                            fontSize: 13,
+                            fontSize: 9,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -390,19 +390,19 @@ class _LiveScorePageState extends State<LiveScorePage> {
               },
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 6),
           InkWell(
             onTap: _pickDate,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(10),
             child: Container(
-              width: 52,
-              height: 52,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: const Color(0xFF151515),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: Colors.white.withOpacity(0.06)),
               ),
-              child: const Icon(Icons.calendar_month_outlined, color: Colors.white),
+              child: const Icon(Icons.calendar_month_outlined, color: Colors.white, size: 18),
             ),
           ),
         ],
@@ -415,11 +415,11 @@ class _LiveScorePageState extends State<LiveScorePage> {
       onTap: _showLiveMatches,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        width: 52,
-        height: 52,
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
           color: _isLiveMode ? const Color(0xFF1B1B1B) : const Color(0xFF121212),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: _isLiveMode
                 ? Colors.redAccent.withOpacity(0.7)
@@ -431,7 +431,7 @@ class _LiveScorePageState extends State<LiveScorePage> {
             'LIVE',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 13,
+              fontSize: 9,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -528,19 +528,19 @@ class _LiveScorePageState extends State<LiveScorePage> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF171717),
+        color: const Color.fromARGB(255, 0, 0, 0),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),
+      padding: const EdgeInsets.all(16),
+      
       child: Column(
         children: [
           Row(
             children: [
               Container(
-                width: 56,
-                height: 56,
+                width: 46,
+                height: 46,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.yellow.shade600, width: 2),
@@ -595,12 +595,13 @@ class _LiveScorePageState extends State<LiveScorePage> {
               border: Border.all(color: Colors.white.withOpacity(0.1)),
             ),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(
                   width: 44,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
                         _statusLabel(match),
@@ -610,12 +611,12 @@ class _LiveScorePageState extends State<LiveScorePage> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Container(width: 1, height: 40, color: Colors.white24),
+                      const SizedBox(width: 8),
+                      Container(width: 2, height: 40, color: Colors.white24),
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 22),
                 Expanded(
                   child: Column(
                     children: [
@@ -634,7 +635,7 @@ class _LiveScorePageState extends State<LiveScorePage> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Icon(Icons.star_outline, color: Colors.white60, size: 20),
+                Icon(Icons.star_outline, color: Colors.white60, size: 20),
               ],
             ),
           ),
@@ -643,36 +644,11 @@ class _LiveScorePageState extends State<LiveScorePage> {
     );
   }
 
-  Widget _buildTeamRow({
-    required String teamName,
-    required String teamImage,
-    required String score,
-  }) {
-    return Row(
-      children: [
-        _buildTeamBadge(teamName: teamName, teamImage: teamImage),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            teamName,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        if (score.isNotEmpty)
-          Text(
-            score,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-      ],
-    );
+  String _statusLabel(MatchItem match) {
+    if (match.status == 'NS') {
+      return 'UP';
+    }
+    return match.status;
   }
 
   Widget _buildTeamBadge({
@@ -714,24 +690,36 @@ class _LiveScorePageState extends State<LiveScorePage> {
     );
   }
 
-  String? _teamImageUrl(String imagePath) {
-    final trimmed = imagePath.trim();
-    if (trimmed.isEmpty) {
-      return null;
-    }
-
-    final sourceUrl = trimmed.startsWith('http')
-        ? trimmed
-        : 'https://storage.livescore.com/images/team/medium/$trimmed';
-    return 'https://getimage.membertsd.workers.dev/?url=' + Uri.encodeComponent(sourceUrl);
-  }
-
-  String _statusLabel(MatchItem match) {
-    if (match.status == 'NS') {
-      return 'UP';
-    }
-
-    return match.status;
+  Widget _buildTeamRow({
+    required String teamName,
+    required String teamImage,
+    required String score,
+  }) {
+    return Row(
+      children: [
+        _buildTeamBadge(teamName: teamName, teamImage: teamImage),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            teamName,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        if (score.isNotEmpty)
+          Text(
+            score,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+      ],
+    );
   }
 
   String _scheduledTime(MatchItem match) {
@@ -743,6 +731,18 @@ class _LiveScorePageState extends State<LiveScorePage> {
     final hour = startTime.hour.toString().padLeft(2, '0');
     final minute = startTime.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
+  }
+
+  String? _teamImageUrl(String imagePath) {
+    final trimmed = imagePath.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    final sourceUrl = trimmed.startsWith('http')
+        ? trimmed
+        : 'https://storage.livescore.com/images/team/medium/$trimmed';
+    return 'https://getimage.membertsd.workers.dev/?url=' + Uri.encodeComponent(sourceUrl);
   }
 
   String _initials(String teamName) {

@@ -103,7 +103,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: const Color.fromARGB(255, 0, 0, 0),
       body: RefreshIndicator(
         color: Colors.yellow.shade600,
         backgroundColor: const Color(0xFF1E1E1E),
@@ -428,18 +428,14 @@ class _HomePageState extends State<HomePage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF171717),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
-      ),
+      
       child: Column(
         children: [
           Row(
             children: [
               Container(
-                width: 56,
-                height: 56,
+                width: 46,
+                height: 46,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.yellow.shade600, width: 2),
@@ -494,12 +490,13 @@ class _HomePageState extends State<HomePage> {
               border: Border.all(color: Colors.white.withOpacity(0.1)),
             ),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(
                   width: 44,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
                         _statusLabel(match),
@@ -509,12 +506,12 @@ class _HomePageState extends State<HomePage> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Container(width: 1, height: 40, color: Colors.white24),
+                      const SizedBox(width: 8),
+                      Container(width: 2, height: 40, color: Colors.white24),
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 22),
                 Expanded(
                   child: Column(
                     children: [
@@ -533,7 +530,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Icon(Icons.star_outline, color: Colors.white60, size: 20),
+                Icon(Icons.star_outline, color: Colors.white60, size: 20),
               ],
             ),
           ),
