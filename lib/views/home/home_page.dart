@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../models/match_item.dart';
 import '../../models/news_item.dart';
 import '../../services/live_score_service.dart';
+import '../league/league_list_page.dart';
 import '../livescore/livescore_page.dart';
 import '../news/news_page.dart';
 
@@ -173,6 +174,17 @@ class _HomePageState extends State<HomePage> {
                     right: 16,
                     child: Row(
                       children: [
+                        _buildTopIcon(
+                          Icons.format_list_bulleted_rounded,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const LeagueListPage(),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(width: 12),
                         _buildTopIcon(Icons.search),
                         const SizedBox(width: 12),
                         _buildTopIcon(Icons.notifications_outlined),
@@ -241,18 +253,21 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildTopIcon(IconData icon) {
-    return Container(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white.withOpacity(0.2),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.3),
-          width: 1.5,
+  Widget _buildTopIcon(IconData icon, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white.withOpacity(0.2),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.3),
+            width: 1.5,
+          ),
         ),
+        padding: const EdgeInsets.all(8),
+        child: Icon(icon, color: Colors.white, size: 20),
       ),
-      padding: const EdgeInsets.all(8),
-      child: Icon(icon, color: Colors.white, size: 20),
     );
   }
 
@@ -1155,23 +1170,6 @@ class _HomePageState extends State<HomePage> {
       default:
         return const Color(0xFF0E4DAA);
     }
-  }
-
-  Widget _buildNewsStat(IconData icon, String value) {
-    return Row(
-      children: [
-        Icon(icon, color: Colors.white.withOpacity(0.88), size: 20),
-        const SizedBox(width: 6),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
   }
 
   Widget _buildImageFallback({

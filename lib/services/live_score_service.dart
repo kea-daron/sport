@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
+import '../models/league_option.dart';
 import '../models/match_item.dart';
 import '../models/news_item.dart';
 
@@ -98,6 +100,130 @@ class LiveScoreService {
         .toList();
   }
 
+  Future<List<LeagueOption>> fetchLeagueOptions({
+    required String category,
+    required DateTime date,
+    double timezone = -7,
+  }) async {
+    if (!ApiConfig.isConfigured) {
+      throw Exception(
+        'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
+      );
+    }
+
+    final uri = Uri.parse(
+      '${ApiConfig.liveScoreBaseUrl}${ApiConfig.liveScorePath}',
+    ).replace(
+      queryParameters: {
+        'Category': category,
+        'Date': _formatDate(date),
+        'Timezone': timezone.toString(),
+      },
+    );
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+        'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'LiveScore request failed: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+
+    final dynamic decoded = jsonDecode(response.body);
+    return _extractLeagueOptions(decoded, category);
+  }
+
+  Future<List<MatchItem>> fetchMatchesByLeague({
+    required String category,
+    required String ccd,
+    String? scd,
+    double timezone = -7,
+  }) async {
+    final primary = await _fetchMatchesByLeagueAttempt(
+      category: category,
+      ccd: ccd,
+      scd: scd,
+      timezone: timezone,
+    );
+
+    if (primary != null) {
+      return primary;
+    }
+
+    if (scd != null && scd.trim().isNotEmpty) {
+      final fallback = await _fetchMatchesByLeagueAttempt(
+        category: category,
+        ccd: ccd,
+        timezone: timezone,
+      );
+      if (fallback != null) {
+        return fallback;
+      }
+    }
+
+    throw Exception('LiveScore league request returned an empty response (302).');
+  }
+
+  Future<List<MatchItem>?> _fetchMatchesByLeagueAttempt({
+    required String category,
+    required String ccd,
+    String? scd,
+    required double timezone,
+  }) async {
+    if (!ApiConfig.isConfigured) {
+      throw Exception(
+        'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
+      );
+    }
+
+    final queryParameters = <String, String>{
+      'Category': category,
+      'Ccd': ccd,
+      'Timezone': timezone.toString(),
+    };
+
+    if (scd != null && scd.trim().isNotEmpty) {
+      queryParameters['Scd'] = scd.trim();
+    }
+
+    final uri = Uri.parse(
+      '${ApiConfig.liveScoreBaseUrl}/matches/v2/list-by-league',
+    ).replace(queryParameters: queryParameters);
+
+    final client = HttpClient();
+    try {
+      final request = await client.getUrl(uri);
+      request.followRedirects = false;
+      request.headers.set('Content-Type', 'application/json');
+      request.headers.set('Accept', 'application/json');
+      request.headers.set('x-rapidapi-key', ApiConfig.liveScoreApiKey);
+      request.headers.set('x-rapidapi-host', ApiConfig.liveScoreApiHost);
+
+      final response = await request.close();
+      final body = await utf8.decoder.bind(response).join();
+      if (body.trim().isEmpty) {
+        return null;
+      }
+
+      final dynamic decoded = jsonDecode(body);
+      final List<dynamic> stages = _extractStages(decoded);
+      return stages
+          .expand((dynamic stage) => _parseStageMatches(stage))
+          .toList();
+    } catch (_) {
+      return null;
+    } finally {
+      client.close(force: true);
+    }
+  }
+
   Future<List<NewsItem>> fetchNews({
     String countryCode = 'US',
     String locale = 'en',
@@ -145,6 +271,58 @@ class LiveScoreService {
     final month = date.month.toString().padLeft(2, '0');
     final day = date.day.toString().padLeft(2, '0');
     return '$year$month$day';
+  }
+
+  List<LeagueOption> _extractLeagueOptions(
+    dynamic decoded,
+    String category,
+  ) {
+    final stages = _extractStages(decoded);
+    final options = <LeagueOption>[];
+    final seen = <String>{};
+
+    for (final stage in stages) {
+      if (stage is! Map<String, dynamic>) {
+        continue;
+      }
+
+      final ccd = _readString(
+        stage,
+        const ['Ccd', 'ccd', 'CompCcd', 'competitionCode'],
+      );
+      if (ccd.isEmpty) {
+        continue;
+      }
+
+      final scd = _readString(
+        stage,
+        const ['Scd', 'scd', 'stageCode', 'groupCode'],
+      );
+      final key = '$ccd|$scd';
+      if (!seen.add(key)) {
+        continue;
+      }
+
+      options.add(
+        LeagueOption(
+          category: category,
+          title: _readString(
+            stage,
+            const ['CompN', 'Snm', 'competitionName', 'name'],
+            fallback: ccd,
+          ),
+          subtitle: _readString(
+            stage,
+            const ['CompD', 'CompST', 'Cnm', 'Csnm', 'country', 'region'],
+            fallback: category.toUpperCase(),
+          ),
+          ccd: ccd,
+          scd: scd,
+        ),
+      );
+    }
+
+    return options;
   }
 
   List<dynamic> _extractStages(dynamic decoded) {
