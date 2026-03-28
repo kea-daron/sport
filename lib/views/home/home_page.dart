@@ -607,7 +607,7 @@ class _HomePageState extends State<HomePage> {
     final sourceUrl = trimmed.startsWith('http')
         ? trimmed
         : 'https://storage.livescore.com/images/team/medium/$trimmed';
-    return 'https://getimage.membertsd.workers.dev/?url=$sourceUrl';
+    return 'https://getimage.membertsd.workers.dev/?url=' + Uri.encodeComponent(sourceUrl);
   }
 
   String _statusLabel(MatchItem match) {
@@ -1246,6 +1246,7 @@ class BannerData {
     required this.title,
   });
 }
+
 
 
 

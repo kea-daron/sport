@@ -55,6 +55,49 @@ class LiveScoreService {
         .toList();
   }
 
+
+  Future<List<MatchItem>> fetchLiveMatches({
+    required String category,
+    double timezone = -7,
+  }) async {
+    if (!ApiConfig.isConfigured) {
+      throw Exception(
+        'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
+      );
+    }
+
+    final uri = Uri.parse(
+      '${ApiConfig.liveScoreBaseUrl}${ApiConfig.liveScoreLivePath}',
+    ).replace(
+      queryParameters: {
+        'Category': category,
+        'Timezone': timezone.toString(),
+      },
+    );
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+        'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'LiveScore request failed: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+
+    final dynamic decoded = jsonDecode(response.body);
+    final List<dynamic> stages = _extractStages(decoded);
+
+    return stages
+        .expand((dynamic stage) => _parseStageMatches(stage))
+        .toList();
+  }
+
   Future<List<NewsItem>> fetchNews({
     String countryCode = 'US',
     String locale = 'en',
@@ -94,7 +137,7 @@ class LiveScoreService {
     }
 
     final dynamic decoded = jsonDecode(response.body);
-    return _extractNewsItems(decoded).take(10).toList();
+    return _extractNewsItems(decoded).toList();
   }
 
   static String _formatDate(DateTime date) {
@@ -127,16 +170,30 @@ class LiveScoreService {
     final newsNodes = <Map<String, dynamic>>[];
 
     if (decoded is Map<String, dynamic>) {
-      final sections = decoded['scns'] ?? decoded['sections'];
-      if (sections is List<dynamic>) {
-        for (final section in sections) {
-          _collectNewsNodes(section, newsNodes);
+      _addNewsCollection(decoded['topStories'], newsNodes);
+      _addNewsCollection(decoded['featuredArticles'], newsNodes);
+
+      final homepageArticles = decoded['homepageArticles'];
+      if (homepageArticles is List<dynamic>) {
+        for (final section in homepageArticles) {
+          if (section is Map<String, dynamic>) {
+            _addNewsCollection(section['articles'], newsNodes);
+          }
         }
-      } else {
-        _collectNewsNodes(decoded, newsNodes);
+      }
+
+      if (newsNodes.isEmpty) {
+        final sections = decoded['scns'] ?? decoded['sections'];
+        if (sections is List<dynamic>) {
+          for (final section in sections) {
+            _collectFallbackNewsNodes(section, newsNodes);
+          }
+        } else {
+          _collectFallbackNewsNodes(decoded, newsNodes);
+        }
       }
     } else {
-      _collectNewsNodes(decoded, newsNodes);
+      _collectFallbackNewsNodes(decoded, newsNodes);
     }
 
     final items = newsNodes
@@ -145,29 +202,44 @@ class LiveScoreService {
         .toList();
 
     final seen = <String>{};
-    return items.where((item) => seen.add(item.headline)).toList();
+    return items.where((item) => seen.add(_newsIdentity(item))).toList();
   }
 
-  void _collectNewsNodes(dynamic current, List<Map<String, dynamic>> newsNodes) {
+  void _addNewsCollection(dynamic items, List<Map<String, dynamic>> newsNodes) {
+    if (items is! List<dynamic>) {
+      return;
+    }
+
+    for (final item in items) {
+      if (item is Map<String, dynamic>) {
+        newsNodes.add(item);
+      }
+    }
+  }
+
+  void _collectFallbackNewsNodes(
+    dynamic current,
+    List<Map<String, dynamic>> newsNodes,
+  ) {
     if (current is Map<String, dynamic>) {
-      if (_looksLikeNewsNode(current)) {
+      if (_looksLikeFallbackNewsNode(current)) {
         newsNodes.add(current);
       }
 
       for (final value in current.values) {
-        _collectNewsNodes(value, newsNodes);
+        _collectFallbackNewsNodes(value, newsNodes);
       }
       return;
     }
 
     if (current is List<dynamic>) {
       for (final value in current) {
-        _collectNewsNodes(value, newsNodes);
+        _collectFallbackNewsNodes(value, newsNodes);
       }
     }
   }
 
-  bool _looksLikeNewsNode(Map<String, dynamic> node) {
+  bool _looksLikeFallbackNewsNode(Map<String, dynamic> node) {
     final title = _readString(
       node,
       const [
@@ -184,13 +256,14 @@ class LiveScoreService {
     final image = _readString(
       node,
       const [
+        'mainMedia.gallery.url',
+        'mainMedia.thumbnail.url',
         'image',
         'imageUrl',
         'img',
         'thumbnail',
         'thumb',
         'heroImage',
-        'mainMedia.gallery.0.url',
         'mainMedia.0.url',
         'media.0.url',
         'mi.0.url',
@@ -200,6 +273,12 @@ class LiveScoreService {
     );
 
     return title.isNotEmpty || image.isNotEmpty;
+  }
+
+  String _newsIdentity(NewsItem item) {
+    final source = item.source.trim().toLowerCase();
+    final publishedAt = item.publishedAt.trim().toLowerCase();
+    return '${item.headline.trim().toLowerCase()}|$source|$publishedAt';
   }
 
   List<MatchItem> _parseStageMatches(dynamic stage) {
@@ -292,6 +371,7 @@ class LiveScoreService {
         'headline',
         'articleTitle',
         'shortTitle',
+        'seo.title',
         'tn',
         'hdln',
         'nm',
@@ -307,11 +387,12 @@ class LiveScoreService {
       summary: _readString(
         raw,
         const [
+          'subTitle',
           'subtitle',
           'summary',
           'description',
+          'seo.description',
           'excerpt',
-          'subTitle',
           'smry',
           'desc',
           'teaser',
@@ -321,13 +402,14 @@ class LiveScoreService {
         _readString(
           raw,
           const [
+            'mainMedia.gallery.url',
+            'mainMedia.thumbnail.url',
             'image',
             'imageUrl',
             'img',
             'thumbnail',
             'thumb',
             'heroImage',
-            'mainMedia.gallery.0.url',
             'mainMedia.0.url',
             'media.0.url',
             'mi.0.url',
@@ -337,16 +419,44 @@ class LiveScoreService {
       ),
       source: _readString(
         raw,
-        const ['source', 'provider', 'publisher', 'origin', 'src', 'prv'],
+        const [
+          'publishedBy.name',
+          'source',
+          'provider',
+          'publisher',
+          'origin',
+          'src',
+          'prv',
+        ],
         fallback: 'LiveScore',
       ),
       publishedAt: _readString(
         raw,
-        const ['publishedAt', 'publishDate', 'date', 'lastUpdated', 'dt', 'ut'],
+        const [
+          'publishedAt',
+          'updatedAtUtc',
+          'publishedDate',
+          'publishDate',
+          'date',
+          'lastUpdated',
+          'dt',
+          'ut',
+        ],
       ),
       category: _readString(
         raw,
-        const ['category', 'tag', 'section', 'sport', 'snm', 'nm'],
+        const [
+          'categoryLabel',
+          'category.initialTitle',
+          'category.title',
+          'category',
+          'tag',
+          'section',
+          'sport',
+          'type',
+          'snm',
+          'nm',
+        ],
         fallback: 'NEWS',
       ),
     );
@@ -415,7 +525,7 @@ class LiveScoreService {
                 ? 'https://storage.livescore.com/$normalized'
                 : 'https://storage.livescore.com/images/news/$normalized';
 
-    return 'https://getimage.membertsd.workers.dev/?url=$sourceUrl';
+    return 'https://getimage.membertsd.workers.dev/?url=' + Uri.encodeComponent(sourceUrl);
   }
 
   dynamic _readPath(dynamic current, String path) {
@@ -440,6 +550,8 @@ class LiveScoreService {
     return current;
   }
 }
+
+
 
 
 

@@ -29,6 +29,7 @@ class _LiveScorePageState extends State<LiveScorePage> {
   late _SportOption _selectedSport;
   late DateTime _selectedDate;
   late Future<List<MatchItem>> _matchesFuture;
+  bool _isLiveMode = true;
   int _visibleMatchesCount = _initialMatchesCount;
 
   @override
@@ -40,6 +41,13 @@ class _LiveScorePageState extends State<LiveScorePage> {
   }
 
   Future<List<MatchItem>> _loadMatches() {
+    if (_isLiveMode) {
+      return _liveScoreService.fetchLiveMatches(
+        category: _selectedSport.apiValue,
+        timezone: -7,
+      );
+    }
+
     return _liveScoreService.fetchMatchesByDate(
       category: _selectedSport.apiValue,
       date: _selectedDate,
@@ -68,14 +76,28 @@ class _LiveScorePageState extends State<LiveScorePage> {
     });
   }
 
+
   void _changeDate(DateTime date) {
     final normalized = _stripTime(date);
-    if (_selectedDate == normalized) {
+    if (_selectedDate == normalized && !_isLiveMode) {
       return;
     }
 
     setState(() {
       _selectedDate = normalized;
+      _isLiveMode = false;
+      _matchesFuture = _loadMatches();
+      _visibleMatchesCount = _initialMatchesCount;
+    });
+  }
+
+  void _showLiveMatches() {
+    if (_isLiveMode) {
+      return;
+    }
+
+    setState(() {
+      _isLiveMode = true;
       _matchesFuture = _loadMatches();
       _visibleMatchesCount = _initialMatchesCount;
     });
@@ -159,8 +181,9 @@ class _LiveScorePageState extends State<LiveScorePage> {
                 if (matches.isEmpty) {
                   return _buildMessageCard(
                     title: 'No matches found',
-                    subtitle:
-                        'Try another date or sport, or pull down to refresh.',
+                    subtitle: _isLiveMode
+                        ? 'Try another sport, or pull down to refresh.'
+                        : 'Try another date or sport, or pull down to refresh.',
                   );
                 }
 
@@ -219,8 +242,10 @@ class _LiveScorePageState extends State<LiveScorePage> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Pick a sport and day to track matches in real time.',
+          Text(
+            _isLiveMode
+                ? 'Pick a sport to track matches in real time.'
+                : 'Pick a sport and day to browse match schedules.',
             style: TextStyle(
               color: Colors.white,
               fontSize: 22,
@@ -230,7 +255,9 @@ class _LiveScorePageState extends State<LiveScorePage> {
           ),
           const SizedBox(height: 10),
           Text(
-            'Fast filters, clean cards, and by-date scores powered by the same LiveScore API.',
+            _isLiveMode
+                ? 'Fast filters, clean cards, and live scores powered by the same LiveScore API.'
+                : 'Switch between LIVE and specific dates without leaving this page.',
             style: TextStyle(
               color: Colors.white.withOpacity(0.7),
               fontSize: 14,
@@ -306,7 +333,7 @@ class _LiveScorePageState extends State<LiveScorePage> {
               separatorBuilder: (_, __) => const SizedBox(width: 10),
               itemBuilder: (context, index) {
                 final date = dates[index];
-                final isSelected = _isSameDate(date, _selectedDate);
+                final isSelected = !_isLiveMode && _isSameDate(date, _selectedDate);
 
                 return GestureDetector(
                   onTap: () => _changeDate(date),
@@ -369,19 +396,19 @@ class _LiveScorePageState extends State<LiveScorePage> {
   }
 
   Widget _buildLivePill() {
-    final isToday = _isSameDate(_selectedDate, _stripTime(DateTime.now()));
-
     return GestureDetector(
-      onTap: () => _changeDate(DateTime.now()),
+      onTap: _showLiveMatches,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         width: 52,
         height: 52,
         decoration: BoxDecoration(
-          color: isToday ? const Color(0xFF1B1B1B) : const Color(0xFF121212),
+          color: _isLiveMode ? const Color(0xFF1B1B1B) : const Color(0xFF121212),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: isToday ? Colors.redAccent.withOpacity(0.7) : Colors.white12,
+            color: _isLiveMode
+                ? Colors.redAccent.withOpacity(0.7)
+                : Colors.white12,
           ),
         ),
         child: const Center(
@@ -681,7 +708,7 @@ class _LiveScorePageState extends State<LiveScorePage> {
     final sourceUrl = trimmed.startsWith('http')
         ? trimmed
         : 'https://storage.livescore.com/images/team/medium/$trimmed';
-    return 'https://getimage.membertsd.workers.dev/?url=$sourceUrl';
+    return 'https://getimage.membertsd.workers.dev/?url=' + Uri.encodeComponent(sourceUrl);
   }
 
   String _statusLabel(MatchItem match) {
@@ -721,6 +748,7 @@ class _LiveScorePageState extends State<LiveScorePage> {
     return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
         .toUpperCase();
   }
+
   String _topDateLabel(DateTime date) {
     if (_isSameDate(date, _stripTime(DateTime.now()))) {
       return 'TODAY';
@@ -764,6 +792,7 @@ class _LiveScorePageState extends State<LiveScorePage> {
   bool _isSameDate(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
+
   Widget _buildBottomNav() {
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
@@ -821,6 +850,7 @@ class _SportOption {
     required this.icon,
   });
 }
+
 
 
 
