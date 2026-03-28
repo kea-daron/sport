@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/match_item.dart';
 import '../../services/live_score_service.dart';
 import '../news/news_page.dart';
+import 'match_detail_page.dart';
 
 class LiveScorePage extends StatefulWidget {
   const LiveScorePage({super.key});
@@ -130,6 +131,17 @@ class _LiveScorePageState extends State<LiveScorePage> {
     }
   }
 
+  void _navigateToMatchDetail(MatchItem match) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => MatchDetailPage(
+          match: match,
+          category: _selectedSport.apiValue,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final dateOptions = List<DateTime>.generate(
@@ -195,7 +207,10 @@ class _LiveScorePageState extends State<LiveScorePage> {
                     ...visibleMatches.map(
                       (match) => Padding(
                         padding: const EdgeInsets.only(bottom: 14),
-                        child: _buildMatchCard(match),
+                        child: GestureDetector(
+                          onTap: () => _navigateToMatchDetail(match),
+                          child: _buildMatchCard(match),
+                        ),
                       ),
                     ),
                     if (hasMoreMatches) _buildShowMoreButton(matches.length),

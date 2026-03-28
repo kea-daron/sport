@@ -266,6 +266,48 @@ class LiveScoreService {
     return _extractNewsItems(decoded).toList();
   }
 
+  Future<Map<String, dynamic>> fetchMatchDetail({
+    required String eid,
+    required String category,
+  }) async {
+    if (!ApiConfig.isConfigured) {
+      throw Exception(
+        'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
+      );
+    }
+
+    final uri = Uri.parse(
+      '${ApiConfig.liveScoreBaseUrl}/matches/v2/get-info',
+    ).replace(
+      queryParameters: {
+        'Eid': eid,
+        'Category': category,
+      },
+    );
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+        'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'LiveScore match detail request failed: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+
+    final dynamic decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) {
+      throw Exception('Invalid match detail response format');
+    }
+
+    return decoded;
+  }
+
   static String _formatDate(DateTime date) {
     final year = date.year.toString().padLeft(4, '0');
     final month = date.month.toString().padLeft(2, '0');
@@ -491,6 +533,14 @@ class LiveScoreService {
       return null;
     }
 
+    final eid = _readString(
+      event,
+      const ['Eid', 'eid', 'eventId', 'matchId'],
+    );
+    if (eid.isEmpty) {
+      return null;
+    }
+
     final homeTeam = _readString(
       event,
       const ['T1.0.Nm', 'T1.0.name', 'homeTeam', 'home_name'],
@@ -528,6 +578,7 @@ class LiveScoreService {
     );
 
     return MatchItem(
+      eid: eid,
       competition: competition,
       country: country,
       homeTeam: homeTeam,

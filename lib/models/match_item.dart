@@ -1,4 +1,5 @@
 class MatchItem {
+  final String eid;
   final String competition;
   final String country;
   final String homeTeam;
@@ -11,6 +12,7 @@ class MatchItem {
   final DateTime? startTime;
 
   const MatchItem({
+    required this.eid,
     required this.competition,
     required this.country,
     required this.homeTeam,
