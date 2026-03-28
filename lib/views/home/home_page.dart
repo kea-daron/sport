@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../models/match_item.dart';
+import '../../models/news_item.dart';
 import '../../services/live_score_service.dart';
+import '../livescore/livescore_page.dart';
+import '../news/news_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,13 +19,17 @@ class _HomePageState extends State<HomePage> {
   final LiveScoreService _liveScoreService = const LiveScoreService();
   static const int _initialMatchesCount = 5;
   static const int _matchesPageSize = 5;
+  static const int _initialNewsCount = 5;
+  static const int _newsPageSize = 5;
 
   int _selectedIndex = 0;
   late PageController _bannerController;
   int _currentBannerIndex = 0;
   late Timer _bannerTimer;
   late Future<List<MatchItem>> _matchesFuture;
+  late Future<List<NewsItem>> _newsFuture;
   int _visibleMatchesCount = _initialMatchesCount;
+  int _visibleNewsCount = _initialNewsCount;
 
   final List<BannerData> bannerList = [
     BannerData(
@@ -44,6 +51,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _bannerController = PageController();
     _matchesFuture = _loadMatches();
+    _newsFuture = _loadNews();
     _startBannerAnimation();
   }
 
@@ -55,6 +63,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+
+  Future<List<NewsItem>> _loadNews() {
+    return _liveScoreService.fetchNews();
+  }
   void _startBannerAnimation() {
     _bannerTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (_bannerController.hasClients) {
@@ -69,12 +81,15 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _refreshMatches() async {
-    final future = _loadMatches();
+    final matchesFuture = _loadMatches();
+    final newsFuture = _loadNews();
     setState(() {
-      _matchesFuture = future;
+      _matchesFuture = matchesFuture;
+      _newsFuture = newsFuture;
       _visibleMatchesCount = _initialMatchesCount;
+      _visibleNewsCount = _initialNewsCount;
     });
-    await future;
+    await Future.wait([matchesFuture, newsFuture]);
   }
 
   @override
@@ -132,12 +147,13 @@ class _HomePageState extends State<HomePage> {
             itemBuilder: (context, index) {
               return Stack(
                 children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      image: DecorationImage(
-                        image: NetworkImage(bannerList[index].image),
-                        fit: BoxFit.cover,
-                      ),
+                  Positioned.fill(
+                    child: Image.network(
+                      bannerList[index].image,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return _buildImageFallback();
+                      },
                     ),
                   ),
                   Container(
@@ -583,13 +599,14 @@ class _HomePageState extends State<HomePage> {
   }
 
   String? _teamImageUrl(String imagePath) {
-    if (imagePath.trim().isEmpty) {
+    final trimmed = imagePath.trim();
+    if (trimmed.isEmpty) {
       return null;
     }
 
-    final sourceUrl = Uri.encodeComponent(
-      'https://storage.livescore.com/images/team/medium/$imagePath',
-    );
+    final sourceUrl = trimmed.startsWith('http')
+        ? trimmed
+        : 'https://storage.livescore.com/images/team/medium/$trimmed';
     return 'https://getimage.membertsd.workers.dev/?url=$sourceUrl';
   }
 
@@ -653,7 +670,18 @@ class _HomePageState extends State<HomePage> {
             child: SizedBox(
               width: 60,
               child: Center(
-                child: Image.asset(teams[index], width: 80, height: 80),
+                child: Image.asset(
+                  teams[index],
+                  width: 80,
+                  height: 80,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const SizedBox(
+                      width: 80,
+                      height: 80,
+                      child: Center(child: Icon(Icons.shield_outlined, color: Colors.white54)),
+                    );
+                  },
+                ),
               ),
             ),
           );
@@ -663,6 +691,27 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildFeaturedHighlights() {
+    final highlightItems = [
+      (
+        title: 'Nebraska takes lead with 2.2 seconds left...',
+        meta: '5h ago',
+        image:
+            'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=900&fit=crop',
+      ),
+      (
+        title: '... and wins when Vandy\'s last-second heave JUST misses',
+        meta: '6h ago . 2m read',
+        image:
+            'https://images.unsplash.com/photo-1517649763962-0c623066013b?w=900&fit=crop',
+      ),
+      (
+        title: 'Durant passes Jordan for NBA\'s scoring mark',
+        meta: '6h ago',
+        image:
+            'https://images.unsplash.com/photo-1519861531473-9200262188bf?w=900&fit=crop',
+      ),
+    ];
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -672,7 +721,7 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Featured',
+                'Video Highlights',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -690,53 +739,257 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
           const SizedBox(height: 14),
+          SizedBox(
+            height: 320,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: highlightItems.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 20),
+              itemBuilder: (context, index) {
+                final item = highlightItems[index];
+                return _buildHighlightVideoCard(
+                  title: item.title,
+                  meta: item.meta,
+                  imageUrl: item.image,
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHighlightVideoCard({
+    required String title,
+    required String meta,
+    required String imageUrl,
+  }) {
+    return SizedBox(
+      width: 288,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Container(
+            height: 220,
             decoration: BoxDecoration(
-              color: const Color(0xFF171717),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white.withOpacity(0.08)),
+              color: const Color(0xFF1B1B1B),
             ),
             clipBehavior: Clip.antiAlias,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return _buildImageFallback();
+                  },
+                ),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.14),
+                      ],
+                    ),
+                  ),
+                ),
+                Center(
+                  child: Container(
+                    width: 62,
+                    height: 62,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.2),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.95),
+                        width: 2,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 34,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+              height: 1.25,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            meta,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.68),
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  Widget _buildNewsSection() {
+    return FutureBuilder<List<NewsItem>>(
+      future: _newsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: SizedBox(
+              height: 220,
+              child: Center(
+                child: CircularProgressIndicator(color: Colors.white70),
+              ),
+            ),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return _buildNewsPlaceholder('Unable to load news right now.');
+        }
+
+        final newsItems = snapshot.data ?? const <NewsItem>[];
+        if (newsItems.isEmpty) {
+          return _buildNewsPlaceholder('No news articles available right now.');
+        }
+
+        final visibleNews = newsItems.take(_visibleNewsCount).toList();
+        final hasMoreNews = newsItems.length > visibleNews.length;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'News',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...visibleNews.map(
+              (item) => Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                child: _buildNewsPosterCard(item: item),
+              ),
+            ),
+            if (hasMoreNews) _buildShowMoreNewsButton(newsItems.length),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildShowMoreNewsButton(int totalNews) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton(
+          onPressed: () {
+            setState(() {
+              final nextCount = _visibleNewsCount + _newsPageSize;
+              _visibleNewsCount = nextCount > totalNews ? totalNews : nextCount;
+            });
+          },
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(color: Colors.yellow.shade600),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+          child: Text(
+            'Show More',
+            style: TextStyle(
+              color: Colors.yellow.shade600,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNewsPosterCard({
+    required NewsItem item,
+  }) {
+    final accent = _newsAccent(item.category);
+    final meta = _formatNewsMeta(item);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1D1D1D),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildNewsPosterArtwork(
+            accent: accent,
+            label: item.category.toUpperCase(),
+            imageUrl: item.imageUrl,
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHighlightPoster(),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(18, 16, 18, 6),
-                  child: Text(
-                    'March Madness Round of 32: Best bets, survivor picks for Sunday',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      height: 1.35,
-                    ),
+                Text(
+                  item.headline,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    height: 1.25,
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
-                  child: Text(
-                    '6h ago . 5m read',
+                if (item.summary.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    item.summary,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.68),
-                      fontSize: 12,
+                      color: Colors.white.withOpacity(0.82),
+                      fontSize: 13,
                       fontWeight: FontWeight.w400,
+                      height: 1.4,
                     ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-                  child: Row(
-                    children: [
-                      _buildMetaStat(Icons.favorite_border, '123k'),
-                      const SizedBox(width: 18),
-                      _buildMetaStat(Icons.mode_comment_outlined, '92'),
-                      const Spacer(),
-                      Icon(
-                        Icons.more_horiz,
-                        color: Colors.white.withOpacity(0.85),
-                      ),
-                    ],
+                ],
+                const SizedBox(height: 10),
+                Text(
+                  meta,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.68),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ],
@@ -747,155 +1000,85 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildHighlightPoster() {
+  Widget _buildNewsPosterArtwork({
+    required Color accent,
+    required String label,
+    required String imageUrl,
+  }) {
     return Container(
-      height: 245,
+      height: 270,
       decoration: const BoxDecoration(
         color: Color(0xFFF5F3EF),
       ),
       child: Stack(
+        fit: StackFit.expand,
         children: [
+          if (imageUrl.isEmpty)
+            _buildImageFallback(
+              background: accent.withOpacity(0.2),
+              icon: Icons.image_not_supported_outlined,
+            )
+          else
+            Image.network(
+              imageUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return _buildImageFallback(
+                  background: accent.withOpacity(0.2),
+                  icon: Icons.image_not_supported_outlined,
+                );
+              },
+            ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withOpacity(0.08),
+                  Colors.black.withOpacity(0.5),
+                ],
+              ),
+            ),
+          ),
           Positioned(
-            left: 0,
-            top: 0,
+            top: 18,
+            left: 18,
             child: Container(
-              width: 190,
-              height: 200,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF0E4DAA), Color(0xFF2481F1)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: accent,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
                 ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: -30,
-            bottom: -10,
-            child: Transform.rotate(
-              angle: -0.75,
-              child: Container(
-                width: 170,
-                height: 70,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF2481F1),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 145,
-            top: -10,
-            child: Transform.rotate(
-              angle: 0.78,
-              child: Container(
-                width: 140,
-                height: 32,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF2481F1),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 18,
-            top: 16,
-            child: Text(
-              '........',
-              style: TextStyle(
-                color: const Color(0xFFF5F3EF).withOpacity(0.95),
-                letterSpacing: 4,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          const Positioned(
-            right: 18,
-            top: 22,
-            child: Text(
-              'ALDENAIRE & PARTNERS',
-              style: TextStyle(
-                color: Colors.black87,
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          Positioned(
-            left: 18,
-            right: 18,
-            bottom: 44,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: Text(
-                    'FOOTBALL',
-                    maxLines: 1,
-                    overflow: TextOverflow.visible,
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: MediaQuery.of(context).size.width < 380 ? 54 : 64,
-                      height: 0.95,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -2,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Positioned(
-            right: 22,
-            bottom: 22,
-            child: Text(
-              'HIGHLIGHT',
-              style: TextStyle(
-                color: Color(0xFF0E4DAA),
-                fontSize: 28,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -1,
-              ),
-            ),
-          ),
-          Positioned(
-            left: 18,
-            bottom: 18,
-            child: SizedBox(
-              width: 190,
-              height: 170,
-              child: Image.asset(
-                'assets/images/1.png',
-                fit: BoxFit.contain,
               ),
             ),
           ),
           Positioned(
             right: 20,
-            top: 76,
-            child: Text(
-              '....\n....',
-              style: TextStyle(
-                color: const Color(0xFF0E4DAA).withOpacity(0.9),
-                height: 0.8,
-                letterSpacing: 4,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
+            bottom: 20,
+            child: Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.16),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.9),
+                  width: 1.5,
+                ),
               ),
-            ),
-          ),
-          Positioned(
-            left: 120,
-            bottom: 10,
-            child: Text(
-              '.............',
-              style: TextStyle(
-                color: const Color(0xFF0E4DAA).withOpacity(0.9),
-                letterSpacing: 4,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
+              child: const Icon(
+                Icons.newspaper_rounded,
+                color: Colors.white,
+                size: 28,
               ),
             ),
           ),
@@ -904,7 +1087,77 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildMetaStat(IconData icon, String value) {
+  Widget _buildNewsPlaceholder(String message) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1D1D1D),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Text(
+          message,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.78),
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatNewsMeta(NewsItem item) {
+    final parts = <String>[];
+    if (item.source.isNotEmpty) {
+      parts.add(item.source);
+    }
+
+    final published = _formatPublishedAt(item.publishedAt);
+    if (published.isNotEmpty) {
+      parts.add(published);
+    }
+
+    return parts.isEmpty ? 'LiveScore News' : parts.join(' . ');
+  }
+
+  String _formatPublishedAt(String value) {
+    if (value.trim().isEmpty) {
+      return '';
+    }
+
+    final parsed = DateTime.tryParse(value);
+    if (parsed == null) {
+      return value;
+    }
+
+    final now = DateTime.now();
+    final difference = now.difference(parsed.toLocal());
+    if (difference.inMinutes < 60) {
+      final minutes = difference.inMinutes.clamp(1, 59);
+      return '${minutes}m ago';
+    }
+    if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    }
+    return '${difference.inDays}d ago';
+  }
+
+  Color _newsAccent(String category) {
+    switch (category.toLowerCase()) {
+      case 'transfer':
+        return const Color(0xFF0F7B63);
+      case 'breaking':
+        return const Color(0xFFB3261E);
+      case 'match report':
+        return const Color(0xFF6F4B00);
+      default:
+        return const Color(0xFF0E4DAA);
+    }
+  }
+
+  Widget _buildNewsStat(IconData icon, String value) {
     return Row(
       children: [
         Icon(icon, color: Colors.white.withOpacity(0.88), size: 20),
@@ -921,69 +1174,18 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildNewsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: const Text(
-            'News',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Container(
-            height: 120,
-            decoration: BoxDecoration(
-              color: Colors.blue.shade600,
-              borderRadius: BorderRadius.circular(12),
-              image: const DecorationImage(
-                image: NetworkImage(
-                  'https://images.unsplash.com/photo-1556228578898-c89b6b1bac34?w=800&fit=crop',
-                ),
-                fit: BoxFit.cover,
-              ),
-            ),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.blue.shade700,
-                    Colors.transparent,
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Padding(
-                padding: EdgeInsets.all(12),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'ALLIANZ & PARTNERS',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
+  Widget _buildImageFallback({
+    Color background = const Color(0xFF1B1B1B),
+    IconData icon = Icons.broken_image_outlined,
+  }) {
+    return Container(
+      color: background,
+      alignment: Alignment.center,
+      child: Icon(
+        icon,
+        color: Colors.white54,
+        size: 36,
+      ),
     );
   }
 
@@ -995,6 +1197,20 @@ class _HomePageState extends State<HomePage> {
       unselectedItemColor: Colors.white60,
       currentIndex: _selectedIndex,
       onTap: (index) {
+        if (index == 1) {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const NewsPage()),
+          );
+          return;
+        }
+
+        if (index == 2) {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const LiveScorePage()),
+          );
+          return;
+        }
+
         setState(() {
           _selectedIndex = index;
         });
@@ -1030,3 +1246,6 @@ class BannerData {
     required this.title,
   });
 }
+
+
+

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'views/welcome/welcome_page.dart';
 import 'views/home/home_page.dart';
+import 'views/livescore/livescore_page.dart';
+import 'views/news/news_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -22,6 +24,8 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => const WelcomePage(),
         '/home': (context) => const HomePage(),
+        '/livescore': (context) => const LiveScorePage(),
+        '/news': (context) => const NewsPage(),
       },
     );
   }

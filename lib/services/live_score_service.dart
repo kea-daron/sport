@@ -4,9 +4,12 @@ import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
 import '../models/match_item.dart';
+import '../models/news_item.dart';
 
 class LiveScoreService {
   const LiveScoreService();
+
+  static const String _newsPath = '/news/v3/list';
 
   Future<List<MatchItem>> fetchMatchesByDate({
     required String category,
@@ -49,8 +52,49 @@ class LiveScoreService {
 
     return stages
         .expand((dynamic stage) => _parseStageMatches(stage))
-        .take(12)
         .toList();
+  }
+
+  Future<List<NewsItem>> fetchNews({
+    String countryCode = 'US',
+    String locale = 'en',
+    bool includeBet = true,
+    String competitionIds = '65,77,60',
+    String participantIds = '2810,3340,2773',
+  }) async {
+    if (!ApiConfig.isConfigured) {
+      throw Exception(
+        'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
+      );
+    }
+
+    final uri = Uri.parse('${ApiConfig.liveScoreBaseUrl}$_newsPath').replace(
+      queryParameters: {
+        'countryCode': countryCode,
+        'locale': locale,
+        'bet': includeBet.toString(),
+        'competitionIds': competitionIds,
+        'participantIds': participantIds,
+      },
+    );
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+        'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'LiveScore news request failed: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+
+    final dynamic decoded = jsonDecode(response.body);
+    return _extractNewsItems(decoded).take(10).toList();
   }
 
   static String _formatDate(DateTime date) {
@@ -77,6 +121,85 @@ class LiveScoreService {
     }
 
     return const [];
+  }
+
+  List<NewsItem> _extractNewsItems(dynamic decoded) {
+    final newsNodes = <Map<String, dynamic>>[];
+
+    if (decoded is Map<String, dynamic>) {
+      final sections = decoded['scns'] ?? decoded['sections'];
+      if (sections is List<dynamic>) {
+        for (final section in sections) {
+          _collectNewsNodes(section, newsNodes);
+        }
+      } else {
+        _collectNewsNodes(decoded, newsNodes);
+      }
+    } else {
+      _collectNewsNodes(decoded, newsNodes);
+    }
+
+    final items = newsNodes
+        .map(_parseNewsItem)
+        .whereType<NewsItem>()
+        .toList();
+
+    final seen = <String>{};
+    return items.where((item) => seen.add(item.headline)).toList();
+  }
+
+  void _collectNewsNodes(dynamic current, List<Map<String, dynamic>> newsNodes) {
+    if (current is Map<String, dynamic>) {
+      if (_looksLikeNewsNode(current)) {
+        newsNodes.add(current);
+      }
+
+      for (final value in current.values) {
+        _collectNewsNodes(value, newsNodes);
+      }
+      return;
+    }
+
+    if (current is List<dynamic>) {
+      for (final value in current) {
+        _collectNewsNodes(value, newsNodes);
+      }
+    }
+  }
+
+  bool _looksLikeNewsNode(Map<String, dynamic> node) {
+    final title = _readString(
+      node,
+      const [
+        'title',
+        'headline',
+        'articleTitle',
+        'shortTitle',
+        'tn',
+        'hdln',
+        'nm',
+        'snm',
+      ],
+    );
+    final image = _readString(
+      node,
+      const [
+        'image',
+        'imageUrl',
+        'img',
+        'thumbnail',
+        'thumb',
+        'heroImage',
+        'mainMedia.gallery.0.url',
+        'mainMedia.0.url',
+        'media.0.url',
+        'mi.0.url',
+        'imt',
+        'uri',
+      ],
+    );
+
+    return title.isNotEmpty || image.isNotEmpty;
   }
 
   List<MatchItem> _parseStageMatches(dynamic stage) {
@@ -161,6 +284,74 @@ class LiveScoreService {
     );
   }
 
+  NewsItem? _parseNewsItem(Map<String, dynamic> raw) {
+    final headline = _readString(
+      raw,
+      const [
+        'title',
+        'headline',
+        'articleTitle',
+        'shortTitle',
+        'tn',
+        'hdln',
+        'nm',
+        'snm',
+      ],
+    );
+    if (headline.isEmpty) {
+      return null;
+    }
+
+    return NewsItem(
+      headline: headline,
+      summary: _readString(
+        raw,
+        const [
+          'subtitle',
+          'summary',
+          'description',
+          'excerpt',
+          'subTitle',
+          'smry',
+          'desc',
+          'teaser',
+        ],
+      ),
+      imageUrl: _normalizeNewsImageUrl(
+        _readString(
+          raw,
+          const [
+            'image',
+            'imageUrl',
+            'img',
+            'thumbnail',
+            'thumb',
+            'heroImage',
+            'mainMedia.gallery.0.url',
+            'mainMedia.0.url',
+            'media.0.url',
+            'mi.0.url',
+            'imt',
+          ],
+        ),
+      ),
+      source: _readString(
+        raw,
+        const ['source', 'provider', 'publisher', 'origin', 'src', 'prv'],
+        fallback: 'LiveScore',
+      ),
+      publishedAt: _readString(
+        raw,
+        const ['publishedAt', 'publishDate', 'date', 'lastUpdated', 'dt', 'ut'],
+      ),
+      category: _readString(
+        raw,
+        const ['category', 'tag', 'section', 'sport', 'snm', 'nm'],
+        fallback: 'NEWS',
+      ),
+    );
+  }
+
   DateTime? _parseEsd(dynamic value) {
     if (value == null) {
       return null;
@@ -208,6 +399,25 @@ class LiveScoreService {
     return fallback;
   }
 
+  String _normalizeNewsImageUrl(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      return '';
+    }
+
+    final normalized = trimmed.startsWith('//') ? 'https:$trimmed' : trimmed;
+
+    final sourceUrl = normalized.startsWith('http')
+        ? normalized
+        : normalized.startsWith('/')
+            ? 'https://storage.livescore.com$normalized'
+            : normalized.contains('/')
+                ? 'https://storage.livescore.com/$normalized'
+                : 'https://storage.livescore.com/images/news/$normalized';
+
+    return 'https://getimage.membertsd.workers.dev/?url=$sourceUrl';
+  }
+
   dynamic _readPath(dynamic current, String path) {
     for (final part in path.split('.')) {
       if (current is Map<String, dynamic>) {
@@ -230,3 +440,7 @@ class LiveScoreService {
     return current;
   }
 }
+
+
+
+
