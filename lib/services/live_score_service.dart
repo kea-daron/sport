@@ -8,6 +8,7 @@ import '../config/api_config.dart';
 import '../models/league_option.dart';
 import '../models/match_item.dart';
 import '../models/news_item.dart';
+import '../models/search_result.dart';
 import 'api_cache.dart';
 
 class LiveScoreService {
@@ -269,6 +270,64 @@ class LiveScoreService {
     return options;
   }
 
+  Future<List<SearchResult>> fetchSearchResults({
+    required String category,
+    required String query,
+  }) async {
+    final normalizedQuery = query.trim();
+    if (normalizedQuery.isEmpty) {
+      return const [];
+    }
+
+    final cacheKey = 'search_${category}_${normalizedQuery.toLowerCase()}';
+    final cached = _cache.get<List<SearchResult>>(cacheKey);
+    if (cached != null) {
+      return cached;
+    }
+
+    if (!ApiConfig.isConfigured) {
+      throw Exception(
+        'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
+      );
+    }
+
+    final uri = Uri.parse(
+      '${ApiConfig.liveScoreBaseUrl}/v2/search',
+    ).replace(
+      queryParameters: {
+        'Category': category,
+        'Query': normalizedQuery,
+      },
+    );
+
+    final response = await _retryWithBackoff(
+      () => http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+          'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+        },
+      ),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'LiveScore search request failed: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+
+    final body = response.body.trim();
+    if (body.isEmpty || body == '{}' || body == '[]') {
+      return const [];
+    }
+
+    final dynamic decoded = jsonDecode(body);
+    final results = _extractSearchResults(decoded, category);
+    _cache.set(cacheKey, results, ttl: const Duration(minutes: 5));
+    return results;
+  }
+
   Future<List<MatchItem>> fetchMatchesFromPopularLeagues({
     required String category,
     double timezone = -7,
@@ -463,6 +522,82 @@ class LiveScoreService {
     final newsItems = _extractNewsItems(decoded).toList();
     _cache.set(cacheKey, newsItems, ttl: const Duration(minutes: 15));
     return newsItems;
+  }
+
+  Future<List<NewsItem>> fetchNewsBySport({
+    String categoryId = '20210209133211500030',
+    int page = 1,
+  }) async {
+    final cacheKey = 'news_by_sport_${categoryId}_$page';
+    final cached = _cache.get<List<NewsItem>>(cacheKey);
+    if (cached != null) {
+      return cached;
+    }
+
+    if (!ApiConfig.isConfigured) {
+      throw Exception(
+        'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
+      );
+    }
+
+    final uri = Uri.parse('${ApiConfig.liveScoreBaseUrl}/news/v2/list-by-sport').replace(
+      queryParameters: {
+        'category': categoryId,
+        'page': page.toString(),
+      },
+    );
+
+    print('DEBUG: Fetching news from $uri');
+
+    final response = await _retryWithBackoff(
+      () => http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+          'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+        },
+      ),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'LiveScore news request failed: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+
+    try {
+      final dynamic decoded = jsonDecode(response.body);
+      print('DEBUG: News response keys: ${decoded is Map ? decoded.keys.toList() : 'Not a map'}');
+      
+      // Try to extract news items - handle both array and object responses
+      List<NewsItem> newsItems = [];
+      
+      if (decoded is List<dynamic>) {
+        // If response is directly an array of news items
+        newsItems = decoded
+            .whereType<Map<String, dynamic>>()
+            .map(_parseNewsItem)
+            .whereType<NewsItem>()
+            .toList();
+      } else {
+        // Use standard extraction for object responses
+        newsItems = _extractNewsItems(decoded).toList();
+      }
+      
+      if (newsItems.isEmpty) {
+        print('DEBUG: No news items extracted, returning empty list');
+      } else {
+        print('DEBUG: Extracted ${newsItems.length} news items');
+      }
+      
+      _cache.set(cacheKey, newsItems, ttl: const Duration(minutes: 15));
+      return newsItems;
+    } catch (e) {
+      print('DEBUG: Error parsing news response: $e');
+      // Return empty list instead of throwing to allow partial loading
+      return [];
+    }
   }
 
   Future<Map<String, dynamic>> fetchMatchDetail({
@@ -1008,6 +1143,209 @@ class LiveScoreService {
 
     final seen = <String>{};
     return items.where((item) => seen.add(_newsIdentity(item))).toList();
+  }
+
+  List<SearchResult> _extractSearchResults(dynamic decoded, String category) {
+    final candidates = <Map<String, dynamic>>[];
+    _collectSearchNodes(decoded, candidates);
+
+    final seen = <String>{};
+    final results = <SearchResult>[];
+
+    for (final node in candidates) {
+      final parsed = _parseSearchResult(node, category);
+      if (parsed == null) {
+        continue;
+      }
+
+      final identity = [
+        parsed.type.toLowerCase(),
+        parsed.eid.toLowerCase(),
+        parsed.ccd.toLowerCase(),
+        parsed.scd.toLowerCase(),
+        parsed.title.toLowerCase(),
+        parsed.subtitle.toLowerCase(),
+      ].join('|');
+
+      if (!seen.add(identity)) {
+        continue;
+      }
+
+      results.add(parsed);
+    }
+
+    return results;
+  }
+
+  void _collectSearchNodes(
+    dynamic current,
+    List<Map<String, dynamic>> candidates,
+  ) {
+    if (current is Map<String, dynamic>) {
+      if (_looksLikeSearchNode(current)) {
+        candidates.add(current);
+      }
+
+      for (final value in current.values) {
+        _collectSearchNodes(value, candidates);
+      }
+      return;
+    }
+
+    if (current is List<dynamic>) {
+      for (final value in current) {
+        _collectSearchNodes(value, candidates);
+      }
+    }
+  }
+
+  bool _looksLikeSearchNode(Map<String, dynamic> node) {
+    final title = _readString(
+      node,
+      const [
+        'Nm',
+        'Snm',
+        'CompN',
+        'name',
+        'title',
+        'searchValue',
+        'teamName',
+        'leagueName',
+      ],
+    );
+    final eid = _readString(
+      node,
+      const ['Eid', 'eid', 'eventId', 'matchId'],
+    );
+    final ccd = _readString(
+      node,
+      const ['Ccd', 'ccd', 'CompCcd', 'countryCode'],
+    );
+    final scd = _readString(
+      node,
+      const ['Scd', 'scd', 'stageCode', 'leagueCode'],
+    );
+    final teamA = _readString(
+      node,
+      const ['T1.0.Nm', 'homeTeam', 'home_name'],
+    );
+    final teamB = _readString(
+      node,
+      const ['T2.0.Nm', 'awayTeam', 'away_name'],
+    );
+
+    return title.isNotEmpty ||
+        eid.isNotEmpty ||
+        ccd.isNotEmpty ||
+        scd.isNotEmpty ||
+        teamA.isNotEmpty ||
+        teamB.isNotEmpty;
+  }
+
+  SearchResult? _parseSearchResult(
+    Map<String, dynamic> node,
+    String category,
+  ) {
+    final eid = _readString(
+      node,
+      const ['Eid', 'eid', 'eventId', 'matchId'],
+    );
+    final ccd = _readString(
+      node,
+      const ['Ccd', 'ccd', 'CompCcd', 'countryCode'],
+    );
+    final scd = _readString(
+      node,
+      const ['Scd', 'scd', 'stageCode', 'leagueCode'],
+    );
+
+    final homeTeam = _readString(
+      node,
+      const ['T1.0.Nm', 'homeTeam', 'home_name'],
+    );
+    final awayTeam = _readString(
+      node,
+      const ['T2.0.Nm', 'awayTeam', 'away_name'],
+    );
+
+    final title = _readString(
+      node,
+      const [
+        'Nm',
+        'Snm',
+        'CompN',
+        'name',
+        'title',
+        'searchValue',
+        'teamName',
+        'leagueName',
+      ],
+      fallback: homeTeam.isNotEmpty && awayTeam.isNotEmpty
+          ? '$homeTeam vs $awayTeam'
+          : '',
+    );
+
+    if (title.isEmpty) {
+      return null;
+    }
+
+    final subtitle = _readString(
+      node,
+      const [
+        'CompD',
+        'CompST',
+        'Cnm',
+        'Csnm',
+        'country',
+        'region',
+        'subtitle',
+        'description',
+      ],
+      fallback: category.toUpperCase(),
+    );
+
+    final explicitType = _readString(
+      node,
+      const ['Type', 'type', 'entityType', 'searchType'],
+    ).toLowerCase();
+
+    final type = explicitType.isNotEmpty
+        ? explicitType
+        : eid.isNotEmpty
+            ? 'match'
+            : ccd.isNotEmpty
+                ? 'league'
+                : 'item';
+
+    return SearchResult(
+      category: category,
+      title: title,
+      subtitle: subtitle,
+      type: type,
+      eid: eid,
+      ccd: ccd,
+      scd: scd,
+      imageUrl: _readString(
+        node,
+        const ['Img', 'img', 'image', 'logo', 'badge'],
+      ),
+      homeTeam: homeTeam,
+      awayTeam: awayTeam,
+      homeScore: _readString(
+        node,
+        const ['Tr1', 'Tr1OR', 'homeScore', 'home_score'],
+      ),
+      awayScore: _readString(
+        node,
+        const ['Tr2', 'Tr2OR', 'awayScore', 'away_score'],
+      ),
+      status: _readString(
+        node,
+        const ['Eps', 'EpsL', 'status', 'statusText'],
+        fallback: 'Scheduled',
+      ),
+      startTime: _parseEsd(_readPath(node, 'Esd')),
+    );
   }
 
   void _addNewsCollection(dynamic items, List<Map<String, dynamic>> newsNodes) {

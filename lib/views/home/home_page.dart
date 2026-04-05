@@ -9,6 +9,7 @@ import '../league/league_list_page.dart';
 import '../livescore/livescore_page.dart';
 import '../livescore/match_detail_page.dart';
 import '../news/news_page.dart';
+import '../search/search_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -191,7 +192,16 @@ class _HomePageState extends State<HomePage> {
                           },
                         ),
                         const SizedBox(width: 12),
-                        _buildTopIcon(Icons.search),
+                        _buildTopIcon(
+                          Icons.search,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const SearchPage(),
+                              ),
+                            );
+                          },
+                        ),
                         const SizedBox(width: 12),
                         _buildTopIcon(Icons.notifications_outlined),
                       ],

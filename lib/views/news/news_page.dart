@@ -15,8 +15,8 @@ class NewsPage extends StatefulWidget {
 class _NewsPageState extends State<NewsPage> {
   final LiveScoreService _liveScoreService = const LiveScoreService();
 
-  static const int _initialNewsCount = 5;
-  static const int _newsPageSize = 5;
+  static const String _sportCategoryId = '20210209133211500030'; // Soccer category ID
+  
   final List<_NewsBannerItem> _bannerItems = const [
     _NewsBannerItem(
       image: 'https://wallpapers.com/images/featured/soccer-y8vz4oxbfbc5t6lr.jpg',
@@ -63,26 +63,92 @@ class _NewsPageState extends State<NewsPage> {
   late Future<List<NewsItem>> _newsFuture;
   late PageController _bannerController;
   late Timer _bannerTimer;
-  int _visibleNewsCount = _initialNewsCount;
   int _currentBannerIndex = 0;
+  int _currentPage = 1;
+  List<NewsItem> _allNews = [];
+  bool _isLoadingMore = false;
 
   @override
   void initState() {
     super.initState();
-    _newsFuture = _loadNews();
+    _newsFuture = _loadNews().then((news) {
+      _allNews = news;
+      return news;
+    });
     _bannerController = PageController();
     _startBannerAnimation();
   }
 
-  Future<List<NewsItem>> _loadNews() {
-    return _liveScoreService.fetchNews();
+  Future<List<NewsItem>> _loadNews() async {
+    try {
+      final news = await _liveScoreService.fetchNewsBySport(
+        categoryId: _sportCategoryId,
+        page: _currentPage,
+      );
+      
+      // If new endpoint returns empty, fall back to old news API
+      if (news.isEmpty && _currentPage == 1) {
+        print('DEBUG: New news endpoint returned empty, falling back to old endpoint');
+        return await _liveScoreService.fetchNews();
+      }
+      
+      return news;
+    } catch (e) {
+      print('DEBUG: Error loading news from new endpoint: $e, falling back to old endpoint');
+      // Fall back to old news endpoint on error
+      if (_currentPage == 1) {
+        return await _liveScoreService.fetchNews();
+      }
+      return [];
+    }
+  }
+
+  Future<void> _loadMoreNews() async {
+    if (_isLoadingMore) return;
+    
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    try {
+      _currentPage++;
+      final moreNews = await _liveScoreService.fetchNewsBySport(
+        categoryId: _sportCategoryId,
+        page: _currentPage,
+      );
+      
+      // If new endpoint returns nothing, try old endpoint
+      final news = moreNews.isNotEmpty ? moreNews : await _liveScoreService.fetchNews();
+      
+      setState(() {
+        _allNews.addAll(news);
+      });
+    } catch (e) {
+      _currentPage--;
+      print('DEBUG: Error loading more news: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load more news: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingMore = false;
+        });
+      }
+    }
   }
 
   Future<void> _refreshNews() async {
-    final future = _loadNews();
+    _currentPage = 1;
+    _allNews = [];
+    final future = _loadNews().then((news) {
+      _allNews = news;
+      return news;
+    });
     setState(() {
       _newsFuture = future;
-      _visibleNewsCount = _initialNewsCount;
     });
     await future;
   }
@@ -158,8 +224,9 @@ class _NewsPageState extends State<NewsPage> {
                   );
                 }
 
-                final visibleNews = newsItems.take(_visibleNewsCount).toList();
-                final hasMoreNews = newsItems.length > visibleNews.length;
+                // Show all accumulated news from all pages
+                final visibleNews = _allNews.isNotEmpty ? _allNews : newsItems;
+                final hasMoreNews = _allNews.isNotEmpty; // Always show button if we loaded from API
 
                 return Column(
                   children: [
@@ -171,7 +238,7 @@ class _NewsPageState extends State<NewsPage> {
                             : _buildNewsSplitCard(item: entry.value),
                       ),
                     ),
-                    if (hasMoreNews) _buildShowMoreNewsButton(newsItems.length),
+                    if (hasMoreNews) _buildShowMoreNewsButton(visibleNews.length),
                   ],
                 );
               },
@@ -328,26 +395,34 @@ class _NewsPageState extends State<NewsPage> {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton(
-        onPressed: () {
-          setState(() {
-            final nextCount = _visibleNewsCount + _newsPageSize;
-            _visibleNewsCount = nextCount > totalNews ? totalNews : nextCount;
-          });
-        },
+        onPressed: _isLoadingMore ? null : _loadMoreNews,
         style: OutlinedButton.styleFrom(
-          side: BorderSide(color: Colors.yellow.shade600),
+          side: BorderSide(
+            color: _isLoadingMore 
+                ? Colors.yellow.shade600.withOpacity(0.5)
+                : Colors.yellow.shade600,
+          ),
           padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
         ),
-        child: Text(
-          'Show More',
-          style: TextStyle(
-            color: Colors.yellow.shade600,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        child: _isLoadingMore
+            ? SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation(Colors.yellow.shade600),
+                ),
+              )
+            : Text(
+                'Show More',
+                style: TextStyle(
+                  color: Colors.yellow.shade600,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
       ),
     );
   }
