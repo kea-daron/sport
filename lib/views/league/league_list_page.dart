@@ -14,6 +14,8 @@ class LeagueListPage extends StatefulWidget {
 class _LeagueListPageState extends State<LeagueListPage> {
   final LiveScoreService _liveScoreService = const LiveScoreService();
   late Future<List<LeagueOption>> _leaguesFuture;
+  int _visibleLeaguesCount = 4;
+  static const int _leaguesPageSize = 4;
 
   @override
   void initState() {
@@ -33,6 +35,7 @@ class _LeagueListPageState extends State<LeagueListPage> {
     final future = _loadLeagues();
     setState(() {
       _leaguesFuture = future;
+      _visibleLeaguesCount = 4;
     });
     await future;
   }
@@ -108,13 +111,26 @@ class _LeagueListPageState extends State<LeagueListPage> {
               );
             }
 
-            return GridView.count(
-              crossAxisCount: 2,
-              padding: const EdgeInsets.all(12),
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              childAspectRatio: 0.95,
-              children: leagues.map((league) => _buildLeagueCard(league)).toList(),
+            final visibleLeagues = leagues.take(_visibleLeaguesCount).toList();
+            final hasMoreLeagues = leagues.length > _visibleLeaguesCount;
+
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  GridView.count(
+                    crossAxisCount: 2,
+                    padding: const EdgeInsets.all(12),
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                    childAspectRatio: 0.95,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: visibleLeagues.map((league) => _buildLeagueCard(league)).toList(),
+                  ),
+                  if (hasMoreLeagues) _buildShowMoreButton(leagues.length),
+                ],
+              ),
             );
           },
         ),
@@ -202,6 +218,39 @@ class _LeagueListPageState extends State<LeagueListPage> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShowMoreButton(int totalLeagues) {
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton(
+          onPressed: () {
+            setState(() {
+              final nextCount = _visibleLeaguesCount + _leaguesPageSize;
+              _visibleLeaguesCount = nextCount > totalLeagues
+                  ? totalLeagues
+                  : nextCount;
+            });
+          },
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(color: Colors.yellow.shade600),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+          child: Text(
+            'Show More',
+            style: TextStyle(
+              color: Colors.yellow.shade600,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
       ),
     );

@@ -177,6 +177,138 @@ class LiveScoreService {
     return options;
   }
 
+  Future<List<LeagueOption>> fetchPopularLeagues({
+    required String category,
+  }) async {
+    final cacheKey = 'popular_leagues_$category';
+    final cached = _cache.get<List<LeagueOption>>(cacheKey);
+    if (cached != null) {
+      return cached;
+    }
+
+    if (!ApiConfig.isConfigured) {
+      throw Exception(
+        'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
+      );
+    }
+
+    final uri = Uri.parse(
+      '${ApiConfig.liveScoreBaseUrl}/leagues/v2/list-popular',
+    ).replace(
+      queryParameters: {
+        'Category': category,
+      },
+    );
+
+    final response = await _retryWithBackoff(
+      () => http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+          'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+        },
+      ),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'LiveScore popular leagues request failed: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+
+    final dynamic decoded = jsonDecode(response.body);
+    final options = _extractLeagueOptions(decoded, category);
+    _cache.set(cacheKey, options, ttl: const Duration(minutes: 15));
+    return options;
+  }
+
+  Future<List<LeagueOption>> fetchPopularLeaguesOnHomePage({
+    required String category,
+  }) async {
+    final cacheKey = 'popular_leagues_$category';
+    final cached = _cache.get<List<LeagueOption>>(cacheKey);
+    if (cached != null) {
+      return cached;
+    }
+
+    if (!ApiConfig.isConfigured) {
+      throw Exception(
+        'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
+      );
+    }
+
+    final uri = Uri.parse(
+      '${ApiConfig.liveScoreBaseUrl}/leagues/v2/list-popular',
+    ).replace(
+      queryParameters: {
+        'Category': category,
+      },
+    );
+
+    final response = await _retryWithBackoff(
+      () => http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+          'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+        },
+      ),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'LiveScore popular leagues request failed: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+
+    final dynamic decoded = jsonDecode(response.body);
+    final options = _extractLeagueOptions(decoded, category);
+    _cache.set(cacheKey, options, ttl: const Duration(minutes: 15));
+    return options;
+  }
+
+  Future<List<MatchItem>> fetchMatchesFromPopularLeagues({
+    required String category,
+    double timezone = -7,
+  }) async {
+    final cacheKey = 'matches_from_popular_leagues_$category';
+    final cached = _cache.get<List<MatchItem>>(cacheKey);
+    if (cached != null) {
+      return cached;
+    }
+
+    final popularLeagues = await fetchPopularLeagues(category: category);
+    
+    final matchesList = <MatchItem>[];
+    for (final league in popularLeagues.take(10)) {
+      try {
+        final matches = await fetchMatchesByLeague(
+          category: category,
+          ccd: league.ccd,
+          scd: league.scd,
+          timezone: timezone,
+        );
+        matchesList.addAll(matches);
+      } catch (_) {
+        // Skip leagues that fail to load
+        continue;
+      }
+    }
+
+    // Sort by start time
+    matchesList.sort((a, b) {
+      if (a.startTime == null || b.startTime == null) {
+        return 0;
+      }
+      return b.startTime!.compareTo(a.startTime!);
+    });
+
+    _cache.set(cacheKey, matchesList, ttl: const Duration(minutes: 5));
+    return matchesList;
+  }
+
   Future<List<MatchItem>> fetchMatchesByLeague({
     required String category,
     required String ccd,

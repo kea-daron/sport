@@ -19,10 +19,9 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final LiveScoreService _liveScoreService = const LiveScoreService();
-  static const int _initialMatchesCount = 5;
-  static const int _matchesPageSize = 5;
   static const int _initialNewsCount = 5;
   static const int _newsPageSize = 5;
+  static const int _matchesPerLeague = 5;
 
   int _selectedIndex = 0;
   late PageController _bannerController;
@@ -30,8 +29,8 @@ class _HomePageState extends State<HomePage> {
   late Timer _bannerTimer;
   late Future<List<MatchItem>> _matchesFuture;
   late Future<List<NewsItem>> _newsFuture;
-  int _visibleMatchesCount = _initialMatchesCount;
   int _visibleNewsCount = _initialNewsCount;
+  int _visibleLeaguesCount = 1;
 
   final List<BannerData> bannerList = [
     BannerData(
@@ -58,9 +57,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<List<MatchItem>> _loadMatches() {
-    return _liveScoreService.fetchMatchesByDate(
+    return _liveScoreService.fetchMatchesFromPopularLeagues(
       category: 'soccer',
-      date: DateTime.now(),
       timezone: -7,
     );
   }
@@ -88,10 +86,17 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _matchesFuture = matchesFuture;
       _newsFuture = newsFuture;
-      _visibleMatchesCount = _initialMatchesCount;
       _visibleNewsCount = _initialNewsCount;
+      _visibleLeaguesCount = 1;
     });
     await Future.wait([matchesFuture, newsFuture]);
+  }
+
+  void _showMoreLeagues() {
+    setState(() {
+      _visibleLeaguesCount += 1;
+      _matchesFuture = _loadMatches();
+    });
   }
 
   @override
@@ -282,7 +287,7 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Live Scores',
+                'Popular Leagues',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
@@ -330,20 +335,20 @@ class _HomePageState extends State<HomePage> {
               }
 
               final groupedMatches = _groupMatchesByCompetition(matches);
-              final allCompetitions = groupedMatches.keys.toList();
-              final visibleCompetitions =
-                  allCompetitions.take(_visibleMatchesCount).toList();
-              final hasMoreMatches = allCompetitions.length > visibleCompetitions.length;
+              final allLeagues = groupedMatches.keys.toList();
+              final visibleLeagues =
+                  allLeagues.take(_visibleLeaguesCount).toList();
+              final hasMoreLeagues = allLeagues.length > visibleLeagues.length;
 
               return Column(
                 children: [
-                  ...visibleCompetitions.map(
-                    (competition) => _buildLeagueSection(
-                      competition: competition,
-                      matches: groupedMatches[competition]!,
+                  ...visibleLeagues.map(
+                    (league) => _buildLeagueSection(
+                      competition: league,
+                      matches: groupedMatches[league]!,
                     ),
                   ),
-                  if (hasMoreMatches) _buildShowMoreButton(allCompetitions.length),
+                  if (hasMoreLeagues) _buildShowMoreLeaguesButton(),
                 ],
               );
             },
@@ -353,20 +358,13 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildShowMoreButton(int totalMatches) {
+  Widget _buildShowMoreLeaguesButton() {
     return Padding(
       padding: const EdgeInsets.only(top: 4),
       child: SizedBox(
         width: double.infinity,
         child: OutlinedButton(
-          onPressed: () {
-            setState(() {
-              final nextCount = _visibleMatchesCount + _matchesPageSize;
-              _visibleMatchesCount = nextCount > totalMatches
-                  ? totalMatches
-                  : nextCount;
-            });
-          },
+          onPressed: _showMoreLeagues,
           style: OutlinedButton.styleFrom(
             side: BorderSide(color: Colors.yellow.shade600),
             padding: const EdgeInsets.symmetric(vertical: 14),
@@ -449,6 +447,7 @@ class _HomePageState extends State<HomePage> {
     if (matches.isEmpty) return const SizedBox.shrink();
 
     final firstMatch = matches.first;
+    final visibleMatches = matches.take(_matchesPerLeague).toList();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -521,7 +520,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           // Matches List
-          ...matches.map((match) => GestureDetector(
+          ...visibleMatches.map((match) => GestureDetector(
             onTap: () => _navigateToMatchDetail(match),
             child: Padding(
               padding: const EdgeInsets.only(bottom: 10),
