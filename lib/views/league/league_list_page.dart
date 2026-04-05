@@ -46,7 +46,7 @@ class _LeagueListPageState extends State<LeagueListPage> {
         foregroundColor: Colors.white,
         elevation: 0,
         title: const Text(
-          'Choose League',
+          'All Leagues',
           style: TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
@@ -58,15 +58,18 @@ class _LeagueListPageState extends State<LeagueListPage> {
           future: _leaguesFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
-                children: [
-                  Container(
-                    height: 180,
+              return GridView.count(
+                crossAxisCount: 2,
+                padding: const EdgeInsets.all(12),
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                childAspectRatio: 0.95,
+                children: List.generate(
+                  6,
+                  (index) => Container(
                     decoration: BoxDecoration(
                       color: const Color(0xFF151515),
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Center(
                       child: CircularProgressIndicator(
@@ -74,7 +77,7 @@ class _LeagueListPageState extends State<LeagueListPage> {
                       ),
                     ),
                   ),
-                ],
+                ),
               );
             }
 
@@ -105,14 +108,13 @@ class _LeagueListPageState extends State<LeagueListPage> {
               );
             }
 
-            return ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              children: [
-                _buildHeroHeader(leagues.length),
-                const SizedBox(height: 20),
-                ...leagues.map(_buildLeagueCard),
-              ],
+            return GridView.count(
+              crossAxisCount: 2,
+              padding: const EdgeInsets.all(12),
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio: 0.95,
+              children: leagues.map((league) => _buildLeagueCard(league)).toList(),
             );
           },
         ),
@@ -120,117 +122,86 @@ class _LeagueListPageState extends State<LeagueListPage> {
     );
   }
 
-  Widget _buildHeroHeader(int count) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1A1A1A), Color(0xFF26210F)],
-        ),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'LEAGUES',
-            style: TextStyle(
-              color: Colors.yellow.shade600,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.4,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            '$count available league views',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              height: 1.2,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'These league codes come from the working list-by-date response, so they are safer than hardcoded examples.',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
-              fontSize: 14,
-              height: 1.4,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildLeagueCard(LeagueOption league) {
-    final suffix = league.scd.isEmpty ? '' : ' ? ${league.scd}';
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => LeagueMatchesPage(league: league),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF171717),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => LeagueMatchesPage(league: league),
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E1A0E),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.yellow.shade600),
-                ),
-                child: Icon(
-                  Icons.emoji_events_outlined,
-                  color: Colors.yellow.shade600,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      league.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${league.subtitle}$suffix',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.arrow_forward_ios, color: Colors.yellow.shade600, size: 18),
+        );
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withOpacity(0.02),
+              Colors.white.withOpacity(0.01),
             ],
           ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.yellow.shade600, width: 1),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Image.network(
+                'https://getimage.membertsd.workers.dev/?url=https://storage.livescore.com/images/flag/${league.ccd}.jpg',
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    color: Colors.yellow.shade600.withOpacity(0.2),
+                    child: const Icon(
+                      Icons.emoji_events_outlined,
+                      color: Color(0xFFE3C75F),
+                      size: 16,
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                league.title,
+                maxLines: 2,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  height: 1.1,
+                ),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                league.subtitle,
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 8,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

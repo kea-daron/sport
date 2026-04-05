@@ -2,6 +2,7 @@ class MatchItem {
   final String eid;
   final String competition;
   final String country;
+  final String countryCode;
   final String homeTeam;
   final String awayTeam;
   final String homeTeamImage;
@@ -15,6 +16,7 @@ class MatchItem {
     required this.eid,
     required this.competition,
     required this.country,
+    required this.countryCode,
     required this.homeTeam,
     required this.awayTeam,
     required this.homeTeamImage,

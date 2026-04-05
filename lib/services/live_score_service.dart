@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -7,17 +8,27 @@ import '../config/api_config.dart';
 import '../models/league_option.dart';
 import '../models/match_item.dart';
 import '../models/news_item.dart';
+import 'api_cache.dart';
 
 class LiveScoreService {
   const LiveScoreService();
 
   static const String _newsPath = '/news/v3/list';
+  static const int _maxRetries = 3;
+  static const Duration _retryDelay = Duration(seconds: 1);
+  static final _cache = ApiCache();
 
   Future<List<MatchItem>> fetchMatchesByDate({
     required String category,
     required DateTime date,
     double timezone = -7,
   }) async {
+    final cacheKey = 'matches_by_date_${category}_${_formatDate(date)}';
+    final cached = _cache.get<List<MatchItem>>(cacheKey);
+    if (cached != null) {
+      return cached;
+    }
+
     if (!ApiConfig.isConfigured) {
       throw Exception(
         'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
@@ -34,13 +45,15 @@ class LiveScoreService {
       },
     );
 
-    final response = await http.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-rapidapi-key': ApiConfig.liveScoreApiKey,
-        'x-rapidapi-host': ApiConfig.liveScoreApiHost,
-      },
+    final response = await _retryWithBackoff(
+      () => http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+          'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+        },
+      ),
     );
 
     if (response.statusCode != 200) {
@@ -52,9 +65,12 @@ class LiveScoreService {
     final dynamic decoded = jsonDecode(response.body);
     final List<dynamic> stages = _extractStages(decoded);
 
-    return stages
+    final matches = stages
         .expand((dynamic stage) => _parseStageMatches(stage))
         .toList();
+
+    _cache.set(cacheKey, matches, ttl: const Duration(minutes: 10));
+    return matches;
   }
 
 
@@ -62,6 +78,12 @@ class LiveScoreService {
     required String category,
     double timezone = -7,
   }) async {
+    final cacheKey = 'matches_live_$category';
+    final cached = _cache.get<List<MatchItem>>(cacheKey);
+    if (cached != null) {
+      return cached;
+    }
+
     if (!ApiConfig.isConfigured) {
       throw Exception(
         'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
@@ -77,13 +99,15 @@ class LiveScoreService {
       },
     );
 
-    final response = await http.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-rapidapi-key': ApiConfig.liveScoreApiKey,
-        'x-rapidapi-host': ApiConfig.liveScoreApiHost,
-      },
+    final response = await _retryWithBackoff(
+      () => http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+          'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+        },
+      ),
     );
 
     if (response.statusCode != 200) {
@@ -95,9 +119,12 @@ class LiveScoreService {
     final dynamic decoded = jsonDecode(response.body);
     final List<dynamic> stages = _extractStages(decoded);
 
-    return stages
+    final matches = stages
         .expand((dynamic stage) => _parseStageMatches(stage))
         .toList();
+
+    _cache.set(cacheKey, matches, ttl: const Duration(minutes: 5));
+    return matches;
   }
 
   Future<List<LeagueOption>> fetchLeagueOptions({
@@ -105,6 +132,12 @@ class LiveScoreService {
     required DateTime date,
     double timezone = -7,
   }) async {
+    final cacheKey = 'league_options_${category}_${_formatDate(date)}';
+    final cached = _cache.get<List<LeagueOption>>(cacheKey);
+    if (cached != null) {
+      return cached;
+    }
+
     if (!ApiConfig.isConfigured) {
       throw Exception(
         'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
@@ -121,13 +154,15 @@ class LiveScoreService {
       },
     );
 
-    final response = await http.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-rapidapi-key': ApiConfig.liveScoreApiKey,
-        'x-rapidapi-host': ApiConfig.liveScoreApiHost,
-      },
+    final response = await _retryWithBackoff(
+      () => http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+          'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+        },
+      ),
     );
 
     if (response.statusCode != 200) {
@@ -137,7 +172,9 @@ class LiveScoreService {
     }
 
     final dynamic decoded = jsonDecode(response.body);
-    return _extractLeagueOptions(decoded, category);
+    final options = _extractLeagueOptions(decoded, category);
+    _cache.set(cacheKey, options, ttl: const Duration(minutes: 10));
+    return options;
   }
 
   Future<List<MatchItem>> fetchMatchesByLeague({
@@ -146,6 +183,12 @@ class LiveScoreService {
     String? scd,
     double timezone = -7,
   }) async {
+    final cacheKey = 'matches_by_league_${category}_${ccd}_${scd ?? ""}';
+    final cached = _cache.get<List<MatchItem>>(cacheKey);
+    if (cached != null) {
+      return cached;
+    }
+
     final primary = await _fetchMatchesByLeagueAttempt(
       category: category,
       ccd: ccd,
@@ -154,6 +197,7 @@ class LiveScoreService {
     );
 
     if (primary != null) {
+      _cache.set(cacheKey, primary, ttl: const Duration(minutes: 10));
       return primary;
     }
 
@@ -164,6 +208,7 @@ class LiveScoreService {
         timezone: timezone,
       );
       if (fallback != null) {
+        _cache.set(cacheKey, fallback, ttl: const Duration(minutes: 10));
         return fallback;
       }
     }
@@ -206,7 +251,19 @@ class LiveScoreService {
       request.headers.set('x-rapidapi-key', ApiConfig.liveScoreApiKey);
       request.headers.set('x-rapidapi-host', ApiConfig.liveScoreApiHost);
 
-      final response = await request.close();
+      late HttpClientResponse response;
+      int retryCount = 0;
+      while (retryCount < _maxRetries) {
+        response = await request.close();
+        if (response.statusCode == 429 && retryCount < _maxRetries - 1) {
+          final delay = _retryDelay * (2 ^ retryCount);
+          await Future.delayed(delay);
+          retryCount++;
+          continue;
+        }
+        break;
+      }
+
       final body = await utf8.decoder.bind(response).join();
       if (body.trim().isEmpty) {
         return null;
@@ -231,6 +288,12 @@ class LiveScoreService {
     String competitionIds = '65,77,60',
     String participantIds = '2810,3340,2773',
   }) async {
+    final cacheKey = 'news_${countryCode}_$locale';
+    final cached = _cache.get<List<NewsItem>>(cacheKey);
+    if (cached != null) {
+      return cached;
+    }
+
     if (!ApiConfig.isConfigured) {
       throw Exception(
         'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
@@ -247,13 +310,15 @@ class LiveScoreService {
       },
     );
 
-    final response = await http.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-rapidapi-key': ApiConfig.liveScoreApiKey,
-        'x-rapidapi-host': ApiConfig.liveScoreApiHost,
-      },
+    final response = await _retryWithBackoff(
+      () => http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+          'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+        },
+      ),
     );
 
     if (response.statusCode != 200) {
@@ -263,13 +328,21 @@ class LiveScoreService {
     }
 
     final dynamic decoded = jsonDecode(response.body);
-    return _extractNewsItems(decoded).toList();
+    final newsItems = _extractNewsItems(decoded).toList();
+    _cache.set(cacheKey, newsItems, ttl: const Duration(minutes: 15));
+    return newsItems;
   }
 
   Future<Map<String, dynamic>> fetchMatchDetail({
     required String eid,
     required String category,
   }) async {
+    final cacheKey = 'match_detail_${eid}_$category';
+    final cached = _cache.get<Map<String, dynamic>>(cacheKey);
+    if (cached != null) {
+      return cached;
+    }
+
     if (!ApiConfig.isConfigured) {
       throw Exception(
         'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
@@ -285,13 +358,15 @@ class LiveScoreService {
       },
     );
 
-    final response = await http.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-rapidapi-key': ApiConfig.liveScoreApiKey,
-        'x-rapidapi-host': ApiConfig.liveScoreApiHost,
-      },
+    final response = await _retryWithBackoff(
+      () => http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+          'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+        },
+      ),
     );
 
     if (response.statusCode != 200) {
@@ -305,7 +380,352 @@ class LiveScoreService {
       throw Exception('Invalid match detail response format');
     }
 
+    _cache.set(cacheKey, decoded, ttl: const Duration(minutes: 5));
     return decoded;
+  }
+
+  Future<Map<String, dynamic>> fetchLineups({
+    required String eid,
+    required String category,
+  }) async {
+    print('DEBUG: fetchLineups called with EID = $eid, Category = $category');
+    
+    final cacheKey = 'match_lineups_${eid}_$category';
+    final cached = _cache.get<Map<String, dynamic>>(cacheKey);
+    if (cached != null) {
+      print('DEBUG: Returning cached lineups for EID = $eid');
+      return cached;
+    }
+
+    if (!ApiConfig.isConfigured) {
+      throw Exception(
+        'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
+      );
+    }
+
+    final uri = Uri.parse(
+      '${ApiConfig.liveScoreBaseUrl}/matches/v2/get-lineups',
+    ).replace(
+      queryParameters: {
+        'Eid': eid,
+        'Category': category,
+      },
+    );
+    
+    print('DEBUG: Lineups API URL = ${uri.toString()}');
+
+    final response = await _retryWithBackoff(
+      () => http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+          'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+        },
+      ),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'LiveScore lineups request failed: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+
+    // Parse the response - handle various formats
+    Map<String, dynamic> lineupsData = {};
+    
+    try {
+      final dynamic decoded = jsonDecode(response.body);
+      
+      if (decoded is Map<String, dynamic>) {
+        // Log the structure for debugging (in production, this helps us understand API responses)
+        print('DEBUG: Lineups response keys: ${decoded.keys.toList()}');
+        
+        // Check for data in various possible keys
+        if (decoded.containsKey('pl')) {
+          // Direct players array at top level
+          print('DEBUG: Found pl key (players array)');
+          lineupsData = decoded;
+        } else if (decoded.containsKey('players')) {
+          // Alternative players key
+          print('DEBUG: Found players key');
+          lineupsData = decoded;
+        } else if (decoded.containsKey('teams')) {
+          // Teams data at top level
+          print('DEBUG: Found teams key');
+          lineupsData = decoded;
+        } else if (decoded.containsKey('Lineups')) {
+          // Capitalized lineups key
+          print('DEBUG: Found Lineups key');
+          lineupsData = decoded;
+        } else if (decoded.containsKey('lineups')) {
+          // Lowercase lineups key
+          print('DEBUG: Found lineups key');
+          lineupsData = decoded;
+        } else if (decoded.containsKey('match')) {
+          // Data nested under 'match' key
+          print('DEBUG: Found match key');
+          final matchData = decoded['match'];
+          if (matchData is Map<String, dynamic>) {
+            lineupsData = matchData;
+          }
+        } else if (decoded.containsKey('M')) {
+          // Abbreviated match key
+          print('DEBUG: Found M key');
+          final matchData = decoded['M'];
+          if (matchData is Map<String, dynamic>) {
+            lineupsData = matchData;
+          }
+        } else if (decoded.containsKey('data')) {
+          // Data nested under 'data' key
+          print('DEBUG: Found data key');
+          final dataValue = decoded['data'];
+          if (dataValue is Map<String, dynamic>) {
+            lineupsData = dataValue;
+          }
+        } else if (decoded.containsKey('response')) {
+          // Data nested under 'response' key
+          print('DEBUG: Found response key');
+          final responseValue = decoded['response'];
+          if (responseValue is Map<String, dynamic>) {
+            lineupsData = responseValue;
+          }
+        } else {
+          // Return the full response for inspection if format is unknown
+          print('DEBUG: Unknown response format, returning full response');
+          lineupsData = decoded.isEmpty ? {} : decoded;
+        }
+      }
+    } catch (e) {
+      // If parsing fails, return empty map
+      print('DEBUG: Error parsing lineups response: $e');
+      lineupsData = {};
+    }
+
+    print('DEBUG: Final lineupsData keys: ${lineupsData.keys.toList()}');
+    _cache.set(cacheKey, lineupsData, ttl: const Duration(minutes: 5));
+    return lineupsData;
+  }
+
+  Future<Map<String, dynamic>> fetchStatistics({
+    required String eid,
+    required String category,
+  }) async {
+    print('DEBUG: fetchStatistics called with EID = $eid, Category = $category');
+    
+    final cacheKey = 'match_statistics_${eid}_$category';
+    final cached = _cache.get<Map<String, dynamic>>(cacheKey);
+    if (cached != null) {
+      print('DEBUG: Returning cached statistics for EID = $eid');
+      return cached;
+    }
+
+    if (!ApiConfig.isConfigured) {
+      throw Exception(
+        'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
+      );
+    }
+
+    final uri = Uri.parse(
+      '${ApiConfig.liveScoreBaseUrl}/matches/v2/get-statistics',
+    ).replace(
+      queryParameters: {
+        'Eid': eid,
+        'Category': category,
+      },
+    );
+    
+    print('DEBUG: Statistics API URL = ${uri.toString()}');
+
+    final response = await _retryWithBackoff(
+      () => http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+          'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+        },
+      ),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'LiveScore statistics request failed: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+
+    // Parse the response - handle various formats
+    Map<String, dynamic> statisticsData = {};
+    
+    try {
+      final dynamic decoded = jsonDecode(response.body);
+      
+      if (decoded is Map<String, dynamic>) {
+        print('DEBUG: Statistics response keys: ${decoded.keys.toList()}');
+        
+        // Check for data in various possible keys
+        if (decoded.containsKey('stats')) {
+          // Direct stats array at top level
+          print('DEBUG: Found stats key');
+          statisticsData = decoded;
+        } else if (decoded.containsKey('statistics')) {
+          // Alternative statistics key
+          print('DEBUG: Found statistics key');
+          statisticsData = decoded;
+        } else if (decoded.containsKey('match')) {
+          // Data nested under 'match' key
+          print('DEBUG: Found match key');
+          final matchData = decoded['match'];
+          if (matchData is Map<String, dynamic>) {
+            statisticsData = matchData;
+          }
+        } else if (decoded.containsKey('M')) {
+          // Abbreviated match key
+          print('DEBUG: Found M key');
+          final matchData = decoded['M'];
+          if (matchData is Map<String, dynamic>) {
+            statisticsData = matchData;
+          }
+        } else if (decoded.containsKey('data')) {
+          // Data nested under 'data' key
+          print('DEBUG: Found data key');
+          final dataValue = decoded['data'];
+          if (dataValue is Map<String, dynamic>) {
+            statisticsData = dataValue;
+          }
+        } else if (decoded.containsKey('response')) {
+          // Data nested under 'response' key
+          print('DEBUG: Found response key');
+          final responseValue = decoded['response'];
+          if (responseValue is Map<String, dynamic>) {
+            statisticsData = responseValue;
+          }
+        } else {
+          // Return the full response for inspection if format is unknown
+          print('DEBUG: Unknown response format, returning full response');
+          statisticsData = decoded.isEmpty ? {} : decoded;
+        }
+      }
+    } catch (e) {
+      // If parsing fails, return empty map
+      print('DEBUG: Error parsing statistics response: $e');
+      statisticsData = {};
+    }
+
+    print('DEBUG: Final statisticsData keys: ${statisticsData.keys.toList()}');
+    _cache.set(cacheKey, statisticsData, ttl: const Duration(minutes: 5));
+    return statisticsData;
+  }
+
+  Future<Map<String, dynamic>> fetchH2H({
+    required String eid,
+    required String category,
+  }) async {
+    print('DEBUG: fetchH2H called with EID = $eid, Category = $category');
+    
+    final cacheKey = 'match_h2h_${eid}_$category';
+    final cached = _cache.get<Map<String, dynamic>>(cacheKey);
+    if (cached != null) {
+      print('DEBUG: Returning cached H2H for EID = $eid');
+      return cached;
+    }
+
+    if (!ApiConfig.isConfigured) {
+      throw Exception(
+        'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
+      );
+    }
+
+    final uri = Uri.parse(
+      '${ApiConfig.liveScoreBaseUrl}/matches/v2/get-h2h',
+    ).replace(
+      queryParameters: {
+        'Eid': eid,
+        'Category': category,
+      },
+    );
+    
+    print('DEBUG: H2H API URL = ${uri.toString()}');
+
+    final response = await _retryWithBackoff(
+      () => http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+          'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+        },
+      ),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'LiveScore H2H request failed: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+
+    // Parse the response - handle various formats
+    Map<String, dynamic> h2hData = {};
+    
+    try {
+      final dynamic decoded = jsonDecode(response.body);
+      
+      if (decoded is Map<String, dynamic>) {
+        print('DEBUG: H2H response keys: ${decoded.keys.toList()}');
+        
+        // Check for data in various possible keys
+        if (decoded.containsKey('h2h')) {
+          // Direct h2h array at top level
+          print('DEBUG: Found h2h key');
+          h2hData = decoded;
+        } else if (decoded.containsKey('headToHead')) {
+          // Alternative h2h key
+          print('DEBUG: Found headToHead key');
+          h2hData = decoded;
+        } else if (decoded.containsKey('H2H')) {
+          // Capitalized h2h key
+          print('DEBUG: Found H2H key');
+          h2hData = decoded;
+        } else if (decoded.containsKey('events')) {
+          // Events array
+          print('DEBUG: Found events key');
+          h2hData = decoded;
+        } else if (decoded.containsKey('match')) {
+          // Data nested under 'match' key
+          print('DEBUG: Found match key');
+          final matchData = decoded['match'];
+          if (matchData is Map<String, dynamic>) {
+            h2hData = matchData;
+          }
+        } else if (decoded.containsKey('data')) {
+          // Data nested under 'data' key
+          print('DEBUG: Found data key');
+          final dataValue = decoded['data'];
+          if (dataValue is Map<String, dynamic>) {
+            h2hData = dataValue;
+          }
+        } else if (decoded.containsKey('response')) {
+          // Data nested under 'response' key
+          print('DEBUG: Found response key');
+          final responseValue = decoded['response'];
+          if (responseValue is Map<String, dynamic>) {
+            h2hData = responseValue;
+          }
+        } else {
+          // Return the full response for inspection if format is unknown
+          print('DEBUG: Unknown response format, returning full response');
+          h2hData = decoded.isEmpty ? {} : decoded;
+        }
+      }
+    } catch (e) {
+      // If parsing fails, return empty map
+      print('DEBUG: Error parsing H2H response: $e');
+      h2hData = {};
+    }
+
+    print('DEBUG: Final h2hData keys: ${h2hData.keys.toList()}');
+    _cache.set(cacheKey, h2hData, ttl: const Duration(minutes: 5));
+    return h2hData;
   }
 
   static String _formatDate(DateTime date) {
@@ -313,6 +733,39 @@ class LiveScoreService {
     final month = date.month.toString().padLeft(2, '0');
     final day = date.day.toString().padLeft(2, '0');
     return '$year$month$day';
+  }
+
+  static Future<http.Response> _retryWithBackoff(
+    Future<http.Response> Function() request,
+  ) async {
+    int retryCount = 0;
+
+    while (retryCount < _maxRetries) {
+      try {
+        final response = await request();
+
+        if (response.statusCode == 429) {
+          if (retryCount < _maxRetries - 1) {
+            final delay = _retryDelay * (2 ^ retryCount);
+            await Future.delayed(delay);
+            retryCount++;
+            continue;
+          }
+        }
+
+        return response;
+      } catch (e) {
+        if (retryCount < _maxRetries - 1) {
+          final delay = _retryDelay * (2 ^ retryCount);
+          await Future.delayed(delay);
+          retryCount++;
+          continue;
+        }
+        rethrow;
+      }
+    }
+
+    throw Exception('Max retries exceeded');
   }
 
   List<LeagueOption> _extractLeagueOptions(
@@ -516,6 +969,11 @@ class LiveScoreService {
       const ['CompD', 'CompST', 'Cnm', 'Csnm', 'country', 'region'],
       fallback: 'International',
     );
+    final countryCode = _readString(
+      stage,
+      const ['Ccd', 'ccd', 'CompCcd', 'countryCode'],
+      fallback: '',
+    );
 
     final events = stage['Events'] ?? stage['events'];
     if (events is! List<dynamic>) {
@@ -523,23 +981,36 @@ class LiveScoreService {
     }
 
     return events
-        .map((dynamic event) => _parseEvent(event, competition, country))
+        .map((dynamic event) => _parseEvent(event, competition, country, countryCode))
         .whereType<MatchItem>()
         .toList();
   }
 
-  MatchItem? _parseEvent(dynamic event, String competition, String country) {
+  MatchItem? _parseEvent(dynamic event, String competition, String country, String countryCode) {
     if (event is! Map<String, dynamic>) {
       return null;
     }
 
+    // Extract eid with multiple fallback keys
     final eid = _readString(
       event,
-      const ['Eid', 'eid', 'eventId', 'matchId'],
+      const [
+        'Eid',           // Primary key from list endpoints
+        'eid',           // Lowercase variant
+        'ID',            // Alternative uppercase
+        'Id',            // Mixed case
+        'eventId',       // Alternative name
+        'event_id',      // Snake case
+        'matchId',       // Alternative name
+        'match_id',      // Snake case
+        'E_Id',          // Underscore variant
+      ],
     );
     if (eid.isEmpty) {
+      print('DEBUG: Failed to extract EID from event. Available keys: ${event.keys.toList()}');
       return null;
     }
+    print('DEBUG: Extracted EID = $eid from list endpoint. Available keys: ${event.keys.take(10).toList()}');
 
     final homeTeam = _readString(
       event,
@@ -581,6 +1052,7 @@ class LiveScoreService {
       eid: eid,
       competition: competition,
       country: country,
+      countryCode: countryCode,
       homeTeam: homeTeam,
       awayTeam: awayTeam,
       homeTeamImage: homeTeamImage,

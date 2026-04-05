@@ -7,6 +7,7 @@ import '../../models/news_item.dart';
 import '../../services/live_score_service.dart';
 import '../league/league_list_page.dart';
 import '../livescore/livescore_page.dart';
+import '../livescore/match_detail_page.dart';
 import '../news/news_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -328,13 +329,21 @@ class _HomePageState extends State<HomePage> {
                 );
               }
 
-              final visibleMatches = matches.take(_visibleMatchesCount).toList();
-              final hasMoreMatches = matches.length > visibleMatches.length;
+              final groupedMatches = _groupMatchesByCompetition(matches);
+              final allCompetitions = groupedMatches.keys.toList();
+              final visibleCompetitions =
+                  allCompetitions.take(_visibleMatchesCount).toList();
+              final hasMoreMatches = allCompetitions.length > visibleCompetitions.length;
 
               return Column(
                 children: [
-                  ...visibleMatches.map(_buildMatchCard),
-                  if (hasMoreMatches) _buildShowMoreButton(matches.length),
+                  ...visibleCompetitions.map(
+                    (competition) => _buildLeagueSection(
+                      competition: competition,
+                      matches: groupedMatches[competition]!,
+                    ),
+                  ),
+                  if (hasMoreMatches) _buildShowMoreButton(allCompetitions.length),
                 ],
               );
             },
@@ -422,118 +431,171 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildMatchCard(MatchItem match) {
-    final showScores = match.homeScore.isNotEmpty && match.awayScore.isNotEmpty;
+  Map<String, List<MatchItem>> _groupMatchesByCompetition(List<MatchItem> matches) {
+    final grouped = <String, List<MatchItem>>{};
+    for (final match in matches) {
+      if (!grouped.containsKey(match.competition)) {
+        grouped[match.competition] = [];
+      }
+      grouped[match.competition]!.add(match);
+    }
+    return grouped;
+  }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
-      
+  Widget _buildLeagueSection({
+    required String competition,
+    required List<MatchItem> matches,
+  }) {
+    if (matches.isEmpty) return const SizedBox.shrink();
+
+    final firstMatch = matches.first;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.yellow.shade600, width: 2),
-                ),
-                child: Center(
-                  child: Text(
-                    _initials(match.competition),
-                    style: TextStyle(
-                      color: Colors.yellow.shade600,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      match.competition,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      match.country,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.arrow_forward_ios, color: Colors.yellow.shade600, size: 18),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
-            ),
+          // League Header
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(
-                  width: 44,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        _statusLabel(match),
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.yellow.shade600, width: 2),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Image.network(
+                    'https://getimage.membertsd.workers.dev/?url=https://storage.livescore.com/images/flag/${firstMatch.countryCode}.jpg',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.yellow.shade600.withOpacity(0.2),
+                        child: Center(
+                          child: Text(
+                            _initials(competition),
+                            style: TextStyle(
+                              color: Colors.yellow.shade600,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(width: 2, height: 40, color: Colors.white24),
-                    ],
+                      );
+                    },
                   ),
                 ),
-                const SizedBox(width: 22),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildTeamRow(
-                        teamName: match.homeTeam,
-                        teamImage: match.homeTeamImage,
-                        score: showScores ? match.homeScore : _scheduledTime(match),
+                      Text(
+                        competition,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                      const SizedBox(height: 14),
-                      _buildTeamRow(
-                        teamName: match.awayTeam,
-                        teamImage: match.awayTeamImage,
-                        score: showScores ? match.awayScore : '',
+                      const SizedBox(height: 1),
+                      Text(
+                        firstMatch.country,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                Icon(Icons.star_outline, color: Colors.white60, size: 20),
+                Icon(Icons.arrow_forward_ios, color: Colors.yellow.shade600, size: 18),
               ],
             ),
           ),
+          // Matches List
+          ...matches.map((match) => GestureDetector(
+            onTap: () => _navigateToMatchDetail(match),
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _buildSimpleMatchCard(match),
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToMatchDetail(MatchItem match) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => MatchDetailPage(
+          match: match,
+          category: 'soccer',
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSimpleMatchCard(MatchItem match) {
+    final showScores = match.homeScore.isNotEmpty && match.awayScore.isNotEmpty;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 36,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  _statusLabel(match),
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Container(width: 1.5, height: 32, color: Colors.white24),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              children: [
+                _buildTeamRow(
+                  teamName: match.homeTeam,
+                  teamImage: match.homeTeamImage,
+                  score: showScores ? match.homeScore : _scheduledTime(match),
+                ),
+                const SizedBox(height: 6),
+                _buildTeamRow(
+                  teamName: match.awayTeam,
+                  teamImage: match.awayTeamImage,
+                  score: showScores ? match.awayScore : '',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Icon(Icons.star_outline, color: Colors.white60, size: 16),
         ],
       ),
     );
@@ -547,13 +609,13 @@ class _HomePageState extends State<HomePage> {
     return Row(
       children: [
         _buildTeamBadge(teamName: teamName, teamImage: teamImage),
-        const SizedBox(width: 8),
+        const SizedBox(width: 6),
         Expanded(
           child: Text(
             teamName,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 13,
+              fontSize: 11,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -563,7 +625,7 @@ class _HomePageState extends State<HomePage> {
             score,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 20,
+              fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -578,8 +640,8 @@ class _HomePageState extends State<HomePage> {
     final imageUrl = _teamImageUrl(teamImage);
 
     return Container(
-      width: 28,
-      height: 28,
+      width: 24,
+      height: 24,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: Colors.white.withOpacity(0.08),

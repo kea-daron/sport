@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/league_option.dart';
 import '../../models/match_item.dart';
 import '../../services/live_score_service.dart';
+import '../livescore/match_detail_page.dart';
 
 class LeagueMatchesPage extends StatefulWidget {
   final LeagueOption league;
@@ -93,18 +94,20 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
                   );
                 }
 
-                final visibleMatches = matches.take(_visibleMatchesCount).toList();
-                final hasMoreMatches = matches.length > visibleMatches.length;
+                final groupedMatches = _groupMatchesByStatus(matches);
+                final allGroups = groupedMatches.entries.toList();
+                final visibleGroups = allGroups.take(_visibleMatchesCount).toList();
+                final hasMoreMatches = allGroups.length > visibleGroups.length;
 
                 return Column(
                   children: [
-                    ...visibleMatches.map(
-                      (match) => Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
-                        child: _buildMatchCard(match),
+                    ...visibleGroups.map(
+                      (entry) => _buildMatchStatusSection(
+                        status: entry.key,
+                        matches: entry.value,
                       ),
                     ),
-                    if (hasMoreMatches) _buildShowMoreButton(matches.length),
+                    if (hasMoreMatches) _buildShowMoreButton(allGroups.length),
                   ],
                 );
               },
@@ -119,9 +122,9 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
     final groupText = widget.league.scd.isEmpty ? 'All league matches' : widget.league.scd.replaceAll('-', ' ').toUpperCase();
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -133,7 +136,7 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.08),
               borderRadius: BorderRadius.circular(999),
@@ -142,29 +145,29 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
               widget.league.title.toUpperCase(),
               style: TextStyle(
                 color: Colors.yellow.shade600,
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 0.4,
+                letterSpacing: 0.3,
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           Text(
             groupText,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 22,
+              fontSize: 16,
               fontWeight: FontWeight.w700,
-              height: 1.2,
+              height: 1.3,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
           Text(
             widget.league.subtitle,
             style: TextStyle(
               color: Colors.white.withOpacity(0.7),
-              fontSize: 14,
-              height: 1.4,
+              fontSize: 12,
+              height: 1.3,
             ),
           ),
         ],
@@ -175,10 +178,10 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
   Widget _buildLoadingState() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 48),
+      padding: const EdgeInsets.symmetric(vertical: 32),
       decoration: BoxDecoration(
         color: const Color(0xFF151515),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Center(
         child: CircularProgressIndicator(color: Colors.yellow.shade600),
@@ -192,10 +195,10 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: const Color(0xFF151515),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,17 +207,123 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
             title,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 18,
+              fontSize: 14,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             subtitle,
             style: TextStyle(
               color: Colors.white.withOpacity(0.72),
-              fontSize: 14,
-              height: 1.4,
+              fontSize: 12,
+              height: 1.3,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Map<String, List<MatchItem>> _groupMatchesByStatus(List<MatchItem> matches) {
+    final grouped = <String, List<MatchItem>>{};
+    
+    // Separate upcoming and finished matches
+    final upcoming = matches.where((m) => m.status == 'NS').toList();
+    final finished = matches.where((m) => m.status != 'NS').toList();
+    
+    if (upcoming.isNotEmpty) {
+      grouped['Upcoming'] = upcoming;
+    }
+    if (finished.isNotEmpty) {
+      grouped['Finished'] = finished;
+    }
+    
+    return grouped;
+  }
+
+  void _navigateToMatchDetail(MatchItem match) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => MatchDetailPage(
+          match: match,
+          category: widget.league.category,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMatchStatusSection({
+    required String status,
+    required List<MatchItem> matches,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Status Header
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: status == 'Upcoming' ? Colors.blue : Colors.green,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      status == 'Upcoming' ? Icons.schedule : Icons.check_circle,
+                      color: status == 'Upcoming' ? Colors.blue : Colors.green,
+                      size: 18,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        status,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        '${matches.length} match${matches.length > 1 ? 'es' : ''}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Matches List
+          ...matches.map(
+            (match) => GestureDetector(
+              onTap: () => _navigateToMatchDetail(match),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _buildMatchCard(match),
+              ),
             ),
           ),
         ],
@@ -259,116 +368,54 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
     final showScores = match.homeScore.isNotEmpty && match.awayScore.isNotEmpty;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF171717),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        color: const Color.fromARGB(255, 0, 0, 0),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
-      child: Column(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.yellow.shade600, width: 2),
-                ),
-                child: Center(
-                  child: Text(
-                    _initials(match.competition),
-                    style: TextStyle(
-                      color: Colors.yellow.shade600,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      match.competition,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      match.country,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.arrow_forward_ios, color: Colors.yellow.shade600, size: 18),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
-            ),
+          SizedBox(
+            width: 44,
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SizedBox(
-                  width: 44,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _statusLabel(match),
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(width: 1, height: 40, color: Colors.white24),
-                    ],
+                Text(
+                  _statusLabel(match),
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    children: [
-                      _buildTeamRow(
-                        teamName: match.homeTeam,
-                        teamImage: match.homeTeamImage,
-                        score: showScores ? match.homeScore : _scheduledTime(match),
-                      ),
-                      const SizedBox(height: 14),
-                      _buildTeamRow(
-                        teamName: match.awayTeam,
-                        teamImage: match.awayTeamImage,
-                        score: showScores ? match.awayScore : '',
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Icon(Icons.star_outline, color: Colors.white60, size: 20),
+                const SizedBox(width: 8),
+                Container(width: 2, height: 40, color: Colors.white24),
               ],
             ),
           ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              children: [
+                _buildTeamRow(
+                  teamName: match.homeTeam,
+                  teamImage: match.homeTeamImage,
+                  score: showScores ? match.homeScore : _scheduledTime(match),
+                ),
+                const SizedBox(height: 10),
+                _buildTeamRow(
+                  teamName: match.awayTeam,
+                  teamImage: match.awayTeamImage,
+                  score: showScores ? match.awayScore : '',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Icon(Icons.star_outline, color: Colors.white60, size: 20),
         ],
       ),
     );
