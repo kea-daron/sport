@@ -795,7 +795,7 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Video',
+                'Video Highlights',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16,
