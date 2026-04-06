@@ -188,7 +188,6 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
   Widget _buildTabBar() {
     final tabs = [
       'OVERVIEW',
-      'SUMMARY',
       'LINEUPS',
       'STATISTICS',
       'PLAYERS',
@@ -217,8 +216,8 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: _selectedTab == index
                       ? Colors.yellow.shade600.withOpacity(0.14)
@@ -237,9 +236,9 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                     color: _selectedTab == index
                         ? Colors.yellow.shade500
                         : Colors.white.withOpacity(0.65),
-                    fontSize: 12,
+                    fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: 0.4,
+                    letterSpacing: 0.2,
                   ),
                 ),
               ),
@@ -255,18 +254,16 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       case 0:
         return _buildOverviewTab(detail);
       case 1:
-        return _buildSummaryTab(detail);
-      case 2:
         return _buildLineupsTab();
-      case 3:
+      case 2:
         return _buildStatisticsTab();
-      case 4:
+      case 3:
         return _buildPlayerStatsTab();
-      case 5:
+      case 4:
         return _buildTeamStatsTab();
-      case 6:
+      case 5:
         return _buildTableTab();
-      case 7:
+      case 6:
         return _buildH2HTab();
       default:
         return _buildOverviewTab(detail);
@@ -283,43 +280,6 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
         const SizedBox(height: 24),
         _buildTeamDetailsSection(),
         const SizedBox(height: 24),
-      ],
-    );
-  }
-
-  Widget _buildSummaryTab(Map<String, dynamic> detail) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF171717),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
-          ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Match Summary',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Summary data will be populated from the API response',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.6),
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
