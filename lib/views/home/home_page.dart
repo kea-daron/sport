@@ -9,6 +9,7 @@ import '../league/league_list_page.dart';
 import '../livescore/livescore_page.dart';
 import '../livescore/match_detail_page.dart';
 import '../news/news_page.dart';
+import '../news/news_detail_page.dart';
 import '../search/search_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -553,6 +554,14 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void _openNewsDetail(NewsItem item) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => NewsDetailPage(item: item),
+      ),
+    );
+  }
+
   Widget _buildSimpleMatchCard(MatchItem match) {
     final showScores = match.homeScore.isNotEmpty && match.awayScore.isNotEmpty;
 
@@ -1022,63 +1031,67 @@ class _HomePageState extends State<HomePage> {
     final accent = _newsAccent(item.category);
     final meta = _formatNewsMeta(item);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF1D1D1D),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildNewsPosterArtwork(
-            accent: accent,
-            label: item.category.toUpperCase(),
-            imageUrl: item.imageUrl,
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.headline,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    height: 1.25,
-                  ),
-                ),
-                if (item.summary.isNotEmpty) ...[
-                  const SizedBox(height: 10),
+    return InkWell(
+      onTap: () => _openNewsDetail(item),
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1D1D1D),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildNewsPosterArtwork(
+              accent: accent,
+              label: item.category.toUpperCase(),
+              imageUrl: item.imageUrl,
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    item.summary,
+                    item.headline,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      height: 1.25,
+                    ),
+                  ),
+                  if (item.summary.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      item.summary,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.82),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 10),
+                  Text(
+                    meta,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.82),
-                      fontSize: 13,
+                      color: Colors.white.withOpacity(0.68),
+                      fontSize: 12,
                       fontWeight: FontWeight.w400,
-                      height: 1.4,
                     ),
                   ),
                 ],
-                const SizedBox(height: 10),
-                Text(
-                  meta,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.68),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

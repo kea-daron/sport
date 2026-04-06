@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
 import '../models/league_option.dart';
+import '../models/news_detail.dart';
 import '../models/match_item.dart';
 import '../models/news_item.dart';
 import '../models/search_result.dart';
@@ -600,6 +601,66 @@ class LiveScoreService {
     }
   }
 
+  Future<NewsDetail> fetchNewsDetail({
+    required String id,
+    NewsItem? fallbackItem,
+  }) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      throw Exception('Missing news article id');
+    }
+
+    final cacheKey = 'news_detail_$normalizedId';
+    final cached = _cache.get<NewsDetail>(cacheKey);
+    if (cached != null) {
+      return cached;
+    }
+
+    if (!ApiConfig.isConfigured) {
+      throw Exception(
+        'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
+      );
+    }
+
+    final uri = Uri.parse(
+      '${ApiConfig.liveScoreBaseUrl}/news/v2/detail',
+    ).replace(
+      queryParameters: {
+        'id': normalizedId,
+      },
+    );
+
+    final response = await _retryWithBackoff(
+      () => http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+          'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+        },
+      ),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'LiveScore news detail request failed: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+
+    final body = response.body.trim();
+    if (body.isEmpty || body == '{}' || body == '[]') {
+      if (fallbackItem != null) {
+        return NewsDetail.fromNewsItem(fallbackItem);
+      }
+      throw Exception('LiveScore news detail response was empty');
+    }
+
+    final dynamic decoded = jsonDecode(body);
+    final detail = _parseNewsDetail(decoded, normalizedId, fallbackItem);
+    _cache.set(cacheKey, detail, ttl: const Duration(minutes: 15));
+    return detail;
+  }
+
   Future<Map<String, dynamic>> fetchMatchDetail({
     required String eid,
     required String category,
@@ -993,6 +1054,270 @@ class LiveScoreService {
     print('DEBUG: Final h2hData keys: ${h2hData.keys.toList()}');
     _cache.set(cacheKey, h2hData, ttl: const Duration(minutes: 5));
     return h2hData;
+  }
+
+  Future<Map<String, dynamic>> fetchLeagueTable({
+    required String teamId,
+    String type = 'short',
+  }) async {
+    final normalizedTeamId = teamId.trim();
+    if (normalizedTeamId.isEmpty) {
+      return const {};
+    }
+
+    final cacheKey = 'league_table_${normalizedTeamId}_$type';
+    final cached = _cache.get<Map<String, dynamic>>(cacheKey);
+    if (cached != null) {
+      return cached;
+    }
+
+    if (!ApiConfig.isConfigured) {
+      throw Exception(
+        'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
+      );
+    }
+
+    final uri = Uri.parse(
+      '${ApiConfig.liveScoreBaseUrl}/teams/get-table',
+    ).replace(
+      queryParameters: {
+        'ID': normalizedTeamId,
+        'Type': type,
+      },
+    );
+
+    final response = await _retryWithBackoff(
+      () => http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+          'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+        },
+      ),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'LiveScore league table request failed: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+
+    final body = response.body.trim();
+    if (body.isEmpty || body == '{}' || body == '[]') {
+      return const {};
+    }
+
+    final dynamic decoded = jsonDecode(body);
+    if (decoded is! Map<String, dynamic>) {
+      throw Exception('Invalid league table response format');
+    }
+
+    _cache.set(cacheKey, decoded, ttl: const Duration(minutes: 10));
+    return decoded;
+  }
+
+  Future<Map<String, dynamic>> fetchTeamDetail({
+    required String teamId,
+  }) async {
+    final normalizedTeamId = teamId.trim();
+    if (normalizedTeamId.isEmpty) {
+      return const {};
+    }
+
+    final cacheKey = 'team_detail_$normalizedTeamId';
+    final cached = _cache.get<Map<String, dynamic>>(cacheKey);
+    if (cached != null) {
+      return cached;
+    }
+
+    if (!ApiConfig.isConfigured) {
+      throw Exception(
+        'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
+      );
+    }
+
+    final uri = Uri.parse(
+      '${ApiConfig.liveScoreBaseUrl}/teams/detail',
+    ).replace(
+      queryParameters: {
+        'ID': normalizedTeamId,
+      },
+    );
+
+    final response = await _retryWithBackoff(
+      () => http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+          'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+        },
+      ),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'LiveScore team detail request failed: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+
+    final body = response.body.trim();
+    if (body.isEmpty || body == '{}' || body == '[]') {
+      return const {};
+    }
+
+    final dynamic decoded = jsonDecode(body);
+    if (decoded is! Map<String, dynamic>) {
+      throw Exception('Invalid team detail response format');
+    }
+
+    _cache.set(cacheKey, decoded, ttl: const Duration(minutes: 15));
+    return decoded;
+  }
+
+  Future<Map<String, dynamic>> fetchTeamPlayerStats({
+    required String teamId,
+    String? compId,
+    String stype = 'cm',
+    int? type,
+  }) async {
+    final normalizedTeamId = teamId.trim();
+    if (normalizedTeamId.isEmpty) {
+      return const {};
+    }
+
+    final normalizedCompId = compId?.trim() ?? '';
+    final cacheKey =
+        'team_player_stats_${normalizedTeamId}_${normalizedCompId}_${stype}_${type ?? ''}';
+    final cached = _cache.get<Map<String, dynamic>>(cacheKey);
+    if (cached != null) {
+      return cached;
+    }
+
+    if (!ApiConfig.isConfigured) {
+      throw Exception(
+        'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
+      );
+    }
+
+    final queryParameters = <String, String>{
+      'ID': normalizedTeamId,
+      'Stype': stype,
+    };
+
+    if (normalizedCompId.isNotEmpty) {
+      queryParameters['CompId'] = normalizedCompId;
+    }
+
+    if (type != null) {
+      queryParameters['Type'] = type.toString();
+    }
+
+    final uri = Uri.parse(
+      '${ApiConfig.liveScoreBaseUrl}/teams/get-player-stats',
+    ).replace(
+      queryParameters: queryParameters,
+    );
+
+    final response = await _retryWithBackoff(
+      () => http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+          'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+        },
+      ),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'LiveScore team player stats request failed: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+
+    final body = response.body.trim();
+    if (body.isEmpty || body == '{}' || body == '[]') {
+      return const {};
+    }
+
+    final dynamic decoded = jsonDecode(body);
+    if (decoded is! Map<String, dynamic>) {
+      throw Exception('Invalid team player stats response format');
+    }
+
+    _cache.set(cacheKey, decoded, ttl: const Duration(minutes: 10));
+    return decoded;
+  }
+
+  Future<Map<String, dynamic>> fetchTeamStats({
+    required String teamId,
+    String? compId,
+    String stype = 'cm',
+  }) async {
+    final normalizedTeamId = teamId.trim();
+    if (normalizedTeamId.isEmpty) {
+      return const {};
+    }
+
+    final normalizedCompId = compId?.trim() ?? '';
+    final cacheKey = 'team_stats_${normalizedTeamId}_${normalizedCompId}_$stype';
+    final cached = _cache.get<Map<String, dynamic>>(cacheKey);
+    if (cached != null) {
+      return cached;
+    }
+
+    if (!ApiConfig.isConfigured) {
+      throw Exception(
+        'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
+      );
+    }
+
+    final queryParameters = <String, String>{
+      'ID': normalizedTeamId,
+      'Stype': stype,
+    };
+
+    if (normalizedCompId.isNotEmpty) {
+      queryParameters['CompId'] = normalizedCompId;
+    }
+
+    final uri = Uri.parse(
+      '${ApiConfig.liveScoreBaseUrl}/teams/get-team-stats',
+    ).replace(
+      queryParameters: queryParameters,
+    );
+
+    final response = await _retryWithBackoff(
+      () => http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+          'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+        },
+      ),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'LiveScore team stats request failed: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+
+    final body = response.body.trim();
+    if (body.isEmpty || body == '{}' || body == '[]') {
+      return const {};
+    }
+
+    final dynamic decoded = jsonDecode(body);
+    if (decoded is! Map<String, dynamic>) {
+      throw Exception('Invalid team stats response format');
+    }
+
+    _cache.set(cacheKey, decoded, ttl: const Duration(minutes: 10));
+    return decoded;
   }
 
   static String _formatDate(DateTime date) {
@@ -1487,10 +1812,18 @@ class LiveScoreService {
       const ['T1.0.Nm', 'T1.0.name', 'homeTeam', 'home_name'],
       fallback: 'Home',
     );
+    final homeTeamId = _readString(
+      event,
+      const ['T1.0.ID', 'T1.0.id', 'homeTeamId', 'home_team_id'],
+    );
     final awayTeam = _readString(
       event,
       const ['T2.0.Nm', 'T2.0.name', 'awayTeam', 'away_name'],
       fallback: 'Away',
+    );
+    final awayTeamId = _readString(
+      event,
+      const ['T2.0.ID', 'T2.0.id', 'awayTeamId', 'away_team_id'],
     );
     final homeTeamImage = _readString(
       event,
@@ -1523,6 +1856,8 @@ class LiveScoreService {
       competition: competition,
       country: country,
       countryCode: countryCode,
+      homeTeamId: homeTeamId,
+      awayTeamId: awayTeamId,
       homeTeam: homeTeam,
       awayTeam: awayTeam,
       homeTeamImage: homeTeamImage,
@@ -1535,6 +1870,17 @@ class LiveScoreService {
   }
 
   NewsItem? _parseNewsItem(Map<String, dynamic> raw) {
+    final id = _readString(
+      raw,
+      const [
+        'id',
+        'ID',
+        'articleId',
+        'articleID',
+        'newsId',
+        'nid',
+      ],
+    );
     final headline = _readString(
       raw,
       const [
@@ -1554,6 +1900,7 @@ class LiveScoreService {
     }
 
     return NewsItem(
+      id: id,
       headline: headline,
       summary: _readString(
         raw,
@@ -1633,6 +1980,189 @@ class LiveScoreService {
     );
   }
 
+  NewsDetail _parseNewsDetail(
+    dynamic decoded,
+    String id,
+    NewsItem? fallbackItem,
+  ) {
+    final fallback = fallbackItem == null
+        ? null
+        : NewsDetail.fromNewsItem(fallbackItem);
+
+    final nodes = <Map<String, dynamic>>[];
+    _collectMapNodes(decoded, nodes);
+
+    Map<String, dynamic>? bestNode;
+    var bestScore = -1;
+
+    for (final node in nodes) {
+      final score = _scoreNewsDetailNode(node);
+      if (score > bestScore) {
+        bestScore = score;
+        bestNode = node;
+      }
+    }
+
+    final source = bestNode ?? <String, dynamic>{};
+    final headline = _readString(
+      source,
+      const [
+        'title',
+        'headline',
+        'articleTitle',
+        'shortTitle',
+        'seo.title',
+        'tn',
+        'hdln',
+        'nm',
+        'snm',
+      ],
+      fallback: fallback?.headline ?? '',
+    );
+
+    final summary = _readString(
+      source,
+      const [
+        'subTitle',
+        'subtitle',
+        'summary',
+        'description',
+        'seo.description',
+        'excerpt',
+        'smry',
+        'desc',
+        'teaser',
+      ],
+      fallback: fallback?.summary ?? '',
+    );
+
+    final content = _normalizeNewsContent(
+      _readString(
+        source,
+        const [
+          'content',
+          'body',
+          'articleBody',
+          'story.body',
+          'story.content',
+          'details',
+          'text',
+          'html',
+          'contentHtml',
+          'contentText',
+          'article.content',
+          'article.body',
+        ],
+      ),
+      fallback: summary.isNotEmpty ? summary : (fallback?.content ?? ''),
+    );
+
+    return NewsDetail(
+      id: id,
+      headline: headline.isNotEmpty ? headline : (fallback?.headline ?? 'News Detail'),
+      summary: summary.isNotEmpty ? summary : (fallback?.summary ?? ''),
+      content: content,
+      imageUrl: _normalizeNewsImageUrl(
+        _readString(
+          source,
+          const [
+            'mainMedia.gallery.url',
+            'mainMedia.thumbnail.url',
+            'image',
+            'imageUrl',
+            'img',
+            'thumbnail',
+            'thumb',
+            'heroImage',
+            'mainMedia.0.url',
+            'media.0.url',
+            'mi.0.url',
+            'imt',
+          ],
+          fallback: fallback?.imageUrl ?? '',
+        ),
+      ),
+      source: _readString(
+        source,
+        const [
+          'publishedBy.name',
+          'source',
+          'provider',
+          'publisher',
+          'origin',
+          'src',
+          'prv',
+        ],
+        fallback: fallback?.source ?? 'LiveScore',
+      ),
+      publishedAt: _readString(
+        source,
+        const [
+          'publishedAt',
+          'updatedAtUtc',
+          'publishedDate',
+          'publishDate',
+          'date',
+          'lastUpdated',
+          'dt',
+          'ut',
+        ],
+        fallback: fallback?.publishedAt ?? '',
+      ),
+      category: _readString(
+        source,
+        const [
+          'categoryLabel',
+          'category.initialTitle',
+          'category.title',
+          'category',
+          'tag',
+          'section',
+          'sport',
+          'type',
+          'snm',
+          'nm',
+        ],
+        fallback: fallback?.category ?? 'NEWS',
+      ),
+    );
+  }
+
+  void _collectMapNodes(dynamic current, List<Map<String, dynamic>> nodes) {
+    if (current is Map<String, dynamic>) {
+      nodes.add(current);
+      for (final value in current.values) {
+        _collectMapNodes(value, nodes);
+      }
+      return;
+    }
+
+    if (current is List<dynamic>) {
+      for (final value in current) {
+        _collectMapNodes(value, nodes);
+      }
+    }
+  }
+
+  int _scoreNewsDetailNode(Map<String, dynamic> node) {
+    var score = 0;
+
+    if (_readString(node, const ['content', 'body', 'articleBody']).isNotEmpty) {
+      score += 4;
+    }
+    if (_readString(node, const ['title', 'headline', 'articleTitle']).isNotEmpty) {
+      score += 3;
+    }
+    if (_readString(node, const ['description', 'summary', 'subtitle']).isNotEmpty) {
+      score += 2;
+    }
+    if (_readString(node, const ['mainMedia.gallery.url', 'image', 'imageUrl']).isNotEmpty) {
+      score += 1;
+    }
+
+    return score;
+  }
+
   DateTime? _parseEsd(dynamic value) {
     if (value == null) {
       return null;
@@ -1697,6 +2227,33 @@ class LiveScoreService {
                 : 'https://storage.livescore.com/images/news/$normalized';
 
     return 'https://getimage.membertsd.workers.dev/?url=' + Uri.encodeComponent(sourceUrl);
+  }
+
+  String _normalizeNewsContent(String value, {String fallback = ''}) {
+    final raw = value.trim().isNotEmpty ? value.trim() : fallback.trim();
+    if (raw.isEmpty) {
+      return '';
+    }
+
+    final withBreaks = raw
+        .replaceAll(RegExp(r'(?i)<br\s*/?>'), '\n')
+        .replaceAll(RegExp(r'(?i)</p>'), '\n\n')
+        .replaceAll(RegExp(r'(?i)</div>'), '\n\n')
+        .replaceAll(RegExp(r'(?i)</li>'), '\n');
+
+    final stripped = withBreaks
+        .replaceAll(RegExp(r'<[^>]+>'), ' ')
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#39;', "'")
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>');
+
+    return stripped
+        .replaceAll(RegExp(r'[ \t]+'), ' ')
+        .replaceAll(RegExp(r'\n{3,}'), '\n\n')
+        .trim();
   }
 
   dynamic _readPath(dynamic current, String path) {

@@ -3,6 +3,8 @@ class MatchItem {
   final String competition;
   final String country;
   final String countryCode;
+  final String homeTeamId;
+  final String awayTeamId;
   final String homeTeam;
   final String awayTeam;
   final String homeTeamImage;
@@ -17,6 +19,8 @@ class MatchItem {
     required this.competition,
     required this.country,
     required this.countryCode,
+    required this.homeTeamId,
+    required this.awayTeamId,
     required this.homeTeam,
     required this.awayTeam,
     required this.homeTeamImage,

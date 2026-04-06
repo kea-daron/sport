@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/news_item.dart';
 import '../../services/live_score_service.dart';
+import 'news_detail_page.dart';
 
 class NewsPage extends StatefulWidget {
   const NewsPage({super.key});
@@ -151,6 +152,14 @@ class _NewsPageState extends State<NewsPage> {
       _newsFuture = future;
     });
     await future;
+  }
+
+  void _openNewsDetail(NewsItem item) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => NewsDetailPage(item: item),
+      ),
+    );
   }
 
   void _startBannerAnimation() {
@@ -433,63 +442,67 @@ class _NewsPageState extends State<NewsPage> {
     final accent = _newsAccent(item.category);
     final meta = _formatNewsMeta(item);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF1D1D1D),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildNewsPosterArtwork(
-            accent: accent,
-            label: item.category.toUpperCase(),
-            imageUrl: item.imageUrl,
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.headline,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    height: 1.25,
-                  ),
-                ),
-                if (item.summary.isNotEmpty) ...[
-                  const SizedBox(height: 10),
+    return InkWell(
+      onTap: () => _openNewsDetail(item),
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1D1D1D),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildNewsPosterArtwork(
+              accent: accent,
+              label: item.category.toUpperCase(),
+              imageUrl: item.imageUrl,
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    item.summary,
+                    item.headline,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      height: 1.25,
+                    ),
+                  ),
+                  if (item.summary.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      item.summary,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.82),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 10),
+                  Text(
+                    meta,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.82),
-                      fontSize: 13,
+                      color: Colors.white.withOpacity(0.68),
+                      fontSize: 12,
                       fontWeight: FontWeight.w400,
-                      height: 1.4,
                     ),
                   ),
                 ],
-                const SizedBox(height: 10),
-                Text(
-                  meta,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.68),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -499,98 +512,102 @@ class _NewsPageState extends State<NewsPage> {
   }) {
     final meta = _formatNewsMeta(item);
 
-    return Container(
-      height: 170,
-      decoration: BoxDecoration(
-        color: const Color(0xFF232323),
-        borderRadius: BorderRadius.circular(22),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Row(
-        children: [
-          SizedBox(
-            width: 150,
-            height: double.infinity,
-            child: item.imageUrl.isEmpty
-                ? _buildImageFallback(background: const Color(0xFF303030))
-                : Image.network(
-                    item.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return _buildImageFallback(
-                        background: const Color(0xFF303030),
-                      );
-                    },
-                  ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      item.headline,
-                      maxLines: 4,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        height: 1.3,
-                      ),
+    return InkWell(
+      onTap: () => _openNewsDetail(item),
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        height: 170,
+        decoration: BoxDecoration(
+          color: const Color(0xFF232323),
+          borderRadius: BorderRadius.circular(22),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Row(
+          children: [
+            SizedBox(
+              width: 150,
+              height: double.infinity,
+              child: item.imageUrl.isEmpty
+                  ? _buildImageFallback(background: const Color(0xFF303030))
+                  : Image.network(
+                      item.imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return _buildImageFallback(
+                          background: const Color(0xFF303030),
+                        );
+                      },
                     ),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          item.source.isEmpty ? 'LiveScore' : item.source,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                          ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.headline,
+                        maxLines: 4,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          height: 1.3,
                         ),
                       ),
-                      Container(
-                        width: 1,
-                        height: 26,
-                        margin: const EdgeInsets.symmetric(horizontal: 14),
-                        color: Colors.white.withOpacity(0.14),
-                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            item.source.isEmpty ? 'LiveScore' : item.source,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          width: 1,
+                          height: 26,
+                          margin: const EdgeInsets.symmetric(horizontal: 14),
+                          color: Colors.white.withOpacity(0.14),
+                        ),
+                        Text(
+                          _compactPublishedAt(item.publishedAt),
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (meta.isNotEmpty) ...[
+                      const SizedBox(height: 8),
                       Text(
-                        _compactPublishedAt(item.publishedAt),
+                        meta,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
-                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.42),
+                          fontSize: 11,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
-                  ),
-                  if (meta.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      meta,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.42),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
                   ],
-                ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

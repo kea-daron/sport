@@ -1,4 +1,5 @@
 class NewsItem {
+  final String id;
   final String headline;
   final String summary;
   final String imageUrl;
@@ -7,6 +8,7 @@ class NewsItem {
   final String category;
 
   const NewsItem({
+    required this.id,
     required this.headline,
     required this.summary,
     required this.imageUrl,

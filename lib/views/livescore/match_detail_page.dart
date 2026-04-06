@@ -22,15 +22,24 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
   late Future<Map<String, dynamic>> _detailFuture;
   late Future<Map<String, dynamic>> _lineupsFuture;
   late Future<Map<String, dynamic>> _statisticsFuture;
+  late Future<Map<String, dynamic>> _tableFuture;
   late Future<Map<String, dynamic>> _h2hFuture;
-  int _selectedTab = 0; // 0: Overview, 1: Summary, 2: Lineups, 3: Statistics, 4: H2H
-  
+  late Future<Map<String, dynamic>> _homeTeamDetailFuture;
+  late Future<Map<String, dynamic>> _awayTeamDetailFuture;
+  late Future<Map<String, dynamic>> _homePlayerStatsFuture;
+  late Future<Map<String, dynamic>> _awayPlayerStatsFuture;
+  late Future<Map<String, dynamic>> _homeTeamStatsFuture;
+  late Future<Map<String, dynamic>> _awayTeamStatsFuture;
+  int _selectedTab = 0;
+
   @override
   void initState() {
     super.initState();
-    print('DEBUG: MatchDetailPage initialized with EID = ${widget.match.eid}, Category = ${widget.category}');
+    print(
+      'DEBUG: MatchDetailPage initialized with EID = ${widget.match.eid}, Category = ${widget.category}',
+    );
     print('DEBUG: Match = ${widget.match.homeTeam} vs ${widget.match.awayTeam}');
-    
+
     _detailFuture = _liveScoreService.fetchMatchDetail(
       eid: widget.match.eid,
       category: widget.category,
@@ -43,10 +52,96 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       eid: widget.match.eid,
       category: widget.category,
     );
+    _tableFuture = _loadLeagueTable();
     _h2hFuture = _liveScoreService.fetchH2H(
       eid: widget.match.eid,
       category: widget.category,
     );
+    _homeTeamDetailFuture = _loadTeamDetail(widget.match.homeTeamId);
+    _awayTeamDetailFuture = _loadTeamDetail(widget.match.awayTeamId);
+    _homePlayerStatsFuture = _loadPlayerStats(widget.match.homeTeamId);
+    _awayPlayerStatsFuture = _loadPlayerStats(widget.match.awayTeamId);
+    _homeTeamStatsFuture = _loadTeamStats(widget.match.homeTeamId);
+    _awayTeamStatsFuture = _loadTeamStats(widget.match.awayTeamId);
+  }
+
+  Future<Map<String, dynamic>> _loadLeagueTable() async {
+    final teamId = widget.match.homeTeamId.trim().isNotEmpty
+        ? widget.match.homeTeamId
+        : widget.match.awayTeamId;
+
+    if (teamId.trim().isEmpty) {
+      return const {};
+    }
+
+    return _liveScoreService.fetchLeagueTable(teamId: teamId);
+  }
+
+  Future<Map<String, dynamic>> _loadTeamDetail(String teamId) async {
+    final normalizedTeamId = teamId.trim();
+    if (normalizedTeamId.isEmpty) {
+      return const {};
+    }
+
+    try {
+      return await _liveScoreService.fetchTeamDetail(teamId: normalizedTeamId);
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  Future<Map<String, dynamic>> _loadPlayerStats(String teamId) async {
+    final normalizedTeamId = teamId.trim();
+    if (normalizedTeamId.isEmpty) {
+      return const {};
+    }
+
+    try {
+      return await _liveScoreService.fetchTeamPlayerStats(teamId: normalizedTeamId);
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  Future<Map<String, dynamic>> _loadTeamStats(String teamId) async {
+    final normalizedTeamId = teamId.trim();
+    if (normalizedTeamId.isEmpty) {
+      return const {};
+    }
+
+    try {
+      return await _liveScoreService.fetchTeamStats(teamId: normalizedTeamId);
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  void _reloadAllData() {
+    setState(() {
+      _detailFuture = _liveScoreService.fetchMatchDetail(
+        eid: widget.match.eid,
+        category: widget.category,
+      );
+      _lineupsFuture = _liveScoreService.fetchLineups(
+        eid: widget.match.eid,
+        category: widget.category,
+      );
+      _statisticsFuture = _liveScoreService.fetchStatistics(
+        eid: widget.match.eid,
+        category: widget.category,
+      );
+      _tableFuture = _loadLeagueTable();
+      _h2hFuture = _liveScoreService.fetchH2H(
+        eid: widget.match.eid,
+        category: widget.category,
+      );
+      _homeTeamDetailFuture = _loadTeamDetail(widget.match.homeTeamId);
+      _awayTeamDetailFuture = _loadTeamDetail(widget.match.awayTeamId);
+      _homePlayerStatsFuture = _loadPlayerStats(widget.match.homeTeamId);
+      _awayPlayerStatsFuture = _loadPlayerStats(widget.match.awayTeamId);
+      _homeTeamStatsFuture = _loadTeamStats(widget.match.homeTeamId);
+      _awayTeamStatsFuture = _loadTeamStats(widget.match.awayTeamId);
+    });
   }
 
   @override
@@ -91,34 +186,48 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
   }
 
   Widget _buildTabBar() {
-    final tabs = ['OVERVIEW', 'SUMMARY', 'LINEUPS', 'STATISTICS', 'H2H'];
-    
+    final tabs = [
+      'OVERVIEW',
+      'SUMMARY',
+      'LINEUPS',
+      'STATISTICS',
+      'PLAYERS',
+      'TEAM STATS',
+      'TABLE',
+      'H2H',
+    ];
+
     return Container(
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(color: Colors.white.withOpacity(0.1), width: 1),
         ),
       ),
-      child: Row(
-        children: List.generate(
-          tabs.length,
-          (index) => Expanded(
-            child: GestureDetector(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Row(
+          children: List.generate(
+            tabs.length,
+            (index) => GestureDetector(
               onTap: () {
                 setState(() {
                   _selectedTab = index;
                 });
               },
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: _selectedTab == index
-                          ? Colors.yellow.shade600
-                          : Colors.transparent,
-                      width: 3,
-                    ),
+                  color: _selectedTab == index
+                      ? Colors.yellow.shade600.withOpacity(0.14)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: _selectedTab == index
+                        ? Colors.yellow.shade600.withOpacity(0.5)
+                        : Colors.white.withOpacity(0.08),
                   ),
                 ),
                 child: Text(
@@ -126,11 +235,11 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: _selectedTab == index
-                        ? Colors.white
-                        : Colors.white.withOpacity(0.5),
+                        ? Colors.yellow.shade500
+                        : Colors.white.withOpacity(0.65),
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.4,
                   ),
                 ),
               ),
@@ -152,6 +261,12 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       case 3:
         return _buildStatisticsTab();
       case 4:
+        return _buildPlayerStatsTab();
+      case 5:
+        return _buildTeamStatsTab();
+      case 6:
+        return _buildTableTab();
+      case 7:
         return _buildH2HTab();
       default:
         return _buildOverviewTab(detail);
@@ -165,6 +280,8 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
         _buildMatchHeader(),
         const SizedBox(height: 24),
         _buildDetailSection('Match Information', detail),
+        const SizedBox(height: 24),
+        _buildTeamDetailsSection(),
         const SizedBox(height: 24),
       ],
     );
@@ -881,6 +998,670 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     );
   }
 
+  Widget _buildPlayerStatsTab() {
+    final hasAnyTeamId = widget.match.homeTeamId.trim().isNotEmpty ||
+        widget.match.awayTeamId.trim().isNotEmpty;
+
+    if (!hasAnyTeamId) {
+      return _buildInlineInfoCard(
+        title: 'Player Stats',
+        message: 'This match does not include team IDs, so player stats cannot be loaded.',
+        accentColor: Colors.orange.shade400,
+      );
+    }
+
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: Future.wait([
+        _homePlayerStatsFuture,
+        _awayPlayerStatsFuture,
+      ]),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: CircularProgressIndicator(color: Colors.yellow.shade600),
+          );
+        }
+
+        final payloads = snapshot.data ?? const <Map<String, dynamic>>[];
+        final homePayload = payloads.isNotEmpty ? payloads[0] : const <String, dynamic>{};
+        final awayPayload = payloads.length > 1 ? payloads[1] : const <String, dynamic>{};
+        final homePlayers = _extractPlayerStatRows(homePayload);
+        final awayPlayers = _extractPlayerStatRows(awayPayload);
+
+        if (homePlayers.isEmpty && awayPlayers.isEmpty) {
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _buildInlineInfoCard(
+                title: 'Player Stats',
+                message: 'No player stats are available for these teams yet.',
+                accentColor: Colors.orange.shade400,
+              ),
+            ],
+          );
+        }
+
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _buildPlayerStatsTeamCard(
+              teamName: widget.match.homeTeam,
+              teamImage: widget.match.homeTeamImage,
+              accentColor: Colors.yellow.shade600,
+              players: homePlayers,
+              fallbackMessage: 'No player stats found for the home team.',
+            ),
+            const SizedBox(height: 16),
+            _buildPlayerStatsTeamCard(
+              teamName: widget.match.awayTeam,
+              teamImage: widget.match.awayTeamImage,
+              accentColor: Colors.blue.shade300,
+              players: awayPlayers,
+              fallbackMessage: 'No player stats found for the away team.',
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildPlayerStatsTeamCard({
+    required String teamName,
+    required String teamImage,
+    required Color accentColor,
+    required List<Map<String, String>> players,
+    required String fallbackMessage,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF171717),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                _buildMiniTeamBadge(teamName, teamImage, accentColor),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    teamName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Divider(color: Colors.white.withOpacity(0.08), height: 1),
+          if (players.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                fallbackMessage,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 13,
+                ),
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: players.take(10).map((player) {
+                  final label = player['label'] ?? '';
+                  final value = player['value'] ?? '';
+                  final rank = player['rank'] ?? '';
+                  final secondary = player['secondary'] ?? '';
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: accentColor.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: accentColor.withOpacity(0.18)),
+                    ),
+                    child: Row(
+                      children: [
+                        if (rank.isNotEmpty)
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: accentColor.withOpacity(0.18),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              rank,
+                              style: TextStyle(
+                                color: accentColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        if (rank.isNotEmpty) const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              if (secondary.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  secondary,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.6),
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          value.isEmpty ? '-' : value,
+                          style: TextStyle(
+                            color: accentColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  List<Map<String, String>> _extractPlayerStatRows(Map<String, dynamic> payload) {
+    final candidates = <Map<String, dynamic>>[];
+    _collectPlayerStatNodes(payload, candidates);
+
+    final seen = <String>{};
+    final rows = <Map<String, String>>[];
+
+    for (final node in candidates) {
+      final name = _readNestedDisplayValue(
+        node,
+        const [
+          'Nm',
+          'nm',
+          'name',
+          'PlayerName',
+          'playerName',
+          'player.name',
+          'Pnm',
+        ],
+        '',
+      );
+      final value = _readNestedDisplayValue(
+        node,
+        const [
+          'Stat',
+          'stat',
+          'Value',
+          'value',
+          'Val',
+          'val',
+          'Total',
+          'total',
+          'Cnt',
+          'cnt',
+          'S',
+          's',
+        ],
+        '',
+      );
+
+      if (name.isEmpty || value.isEmpty) {
+        continue;
+      }
+
+      final rank = _readNestedDisplayValue(
+        node,
+        const ['Rank', 'rank', 'Rnk', 'rnk', 'Pos', 'pos'],
+        '',
+      );
+      final secondary = _readNestedDisplayValue(
+        node,
+        const [
+          'Position',
+          'position',
+          'Team',
+          'team',
+          'Role',
+          'role',
+          'player.position',
+        ],
+        '',
+      );
+
+      final identity = '${name.toLowerCase()}|${value.toLowerCase()}|${rank.toLowerCase()}';
+      if (!seen.add(identity)) {
+        continue;
+      }
+
+      rows.add({
+        'label': name,
+        'value': value,
+        'rank': rank,
+        'secondary': secondary,
+      });
+    }
+
+    rows.sort((a, b) {
+      final aRank = int.tryParse(a['rank'] ?? '') ?? 9999;
+      final bRank = int.tryParse(b['rank'] ?? '') ?? 9999;
+      if (aRank != bRank) {
+        return aRank.compareTo(bRank);
+      }
+
+      final aValue = num.tryParse(a['value'] ?? '') ?? -1;
+      final bValue = num.tryParse(b['value'] ?? '') ?? -1;
+      return bValue.compareTo(aValue);
+    });
+
+    return rows;
+  }
+
+  void _collectPlayerStatNodes(
+    dynamic current,
+    List<Map<String, dynamic>> candidates,
+  ) {
+    if (current is Map<String, dynamic>) {
+      if (_looksLikePlayerStatNode(current)) {
+        candidates.add(current);
+      }
+
+      for (final value in current.values) {
+        _collectPlayerStatNodes(value, candidates);
+      }
+      return;
+    }
+
+    if (current is List<dynamic>) {
+      for (final value in current) {
+        _collectPlayerStatNodes(value, candidates);
+      }
+    }
+  }
+
+  bool _looksLikePlayerStatNode(Map<String, dynamic> node) {
+    final name = _readNestedDisplayValue(
+      node,
+      const [
+        'Nm',
+        'nm',
+        'name',
+        'PlayerName',
+        'playerName',
+        'player.name',
+        'Pnm',
+      ],
+      '',
+    );
+    final value = _readNestedDisplayValue(
+      node,
+      const [
+        'Stat',
+        'stat',
+        'Value',
+        'value',
+        'Val',
+        'val',
+        'Total',
+        'total',
+        'Cnt',
+        'cnt',
+        'S',
+        's',
+      ],
+      '',
+    );
+
+    return name.isNotEmpty && value.isNotEmpty;
+  }
+
+  Widget _buildTeamStatsTab() {
+    final hasAnyTeamId = widget.match.homeTeamId.trim().isNotEmpty ||
+        widget.match.awayTeamId.trim().isNotEmpty;
+
+    if (!hasAnyTeamId) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _buildInlineInfoCard(
+            title: 'Team Stats',
+            message: 'This match does not include team IDs, so team stats cannot be loaded.',
+            accentColor: Colors.orange.shade400,
+          ),
+        ],
+      );
+    }
+
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: Future.wait([
+        _homeTeamStatsFuture,
+        _awayTeamStatsFuture,
+      ]),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: CircularProgressIndicator(color: Colors.yellow.shade600),
+          );
+        }
+
+        final payloads = snapshot.data ?? const <Map<String, dynamic>>[];
+        final homePayload = payloads.isNotEmpty ? payloads[0] : const <String, dynamic>{};
+        final awayPayload = payloads.length > 1 ? payloads[1] : const <String, dynamic>{};
+        final homeStats = _extractTeamStatRows(homePayload);
+        final awayStats = _extractTeamStatRows(awayPayload);
+
+        if (homeStats.isEmpty && awayStats.isEmpty) {
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _buildInlineInfoCard(
+                title: 'Team Stats',
+                message: 'No team stats are available for these teams yet.',
+                accentColor: Colors.orange.shade400,
+              ),
+            ],
+          );
+        }
+
+        final mergedLabels = <String>{
+          ...homeStats.keys,
+          ...awayStats.keys,
+        }.toList()
+          ..sort();
+
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF171717),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withOpacity(0.08)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildTeamStatsHeader(
+                            teamName: widget.match.homeTeam,
+                            teamImage: widget.match.homeTeamImage,
+                            accentColor: Colors.yellow.shade600,
+                            alignEnd: false,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildTeamStatsHeader(
+                            teamName: widget.match.awayTeam,
+                            teamImage: widget.match.awayTeamImage,
+                            accentColor: Colors.blue.shade300,
+                            alignEnd: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Divider(color: Colors.white.withOpacity(0.08), height: 1),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: mergedLabels.map((label) {
+                        final homeValue = homeStats[label] ?? '-';
+                        final awayValue = awayStats[label] ?? '-';
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  homeValue,
+                                  style: TextStyle(
+                                    color: Colors.yellow.shade600,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  label,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.76),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  awayValue,
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                    color: Colors.blue.shade300,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTeamStatsHeader({
+    required String teamName,
+    required String teamImage,
+    required Color accentColor,
+    required bool alignEnd,
+  }) {
+    return Row(
+      mainAxisAlignment:
+          alignEnd ? MainAxisAlignment.end : MainAxisAlignment.start,
+      children: [
+        if (alignEnd)
+          Expanded(
+            child: Text(
+              teamName,
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        if (alignEnd) const SizedBox(width: 10),
+        _buildMiniTeamBadge(teamName, teamImage, accentColor),
+        if (!alignEnd) const SizedBox(width: 10),
+        if (!alignEnd)
+          Expanded(
+            child: Text(
+              teamName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Map<String, String> _extractTeamStatRows(Map<String, dynamic> payload) {
+    final candidates = <Map<String, dynamic>>[];
+    _collectTeamStatNodes(payload, candidates);
+
+    final rows = <String, String>{};
+    for (final node in candidates) {
+      final label = _readNestedDisplayValue(
+        node,
+        const [
+          'Nm',
+          'nm',
+          'name',
+          'StatName',
+          'statName',
+          'Label',
+          'label',
+          'Ttl',
+          'ttl',
+        ],
+        '',
+      );
+      final value = _readNestedDisplayValue(
+        node,
+        const [
+          'Stat',
+          'stat',
+          'Value',
+          'value',
+          'Val',
+          'val',
+          'Total',
+          'total',
+          'Cnt',
+          'cnt',
+          'S',
+          's',
+        ],
+        '',
+      );
+
+      if (label.isEmpty || value.isEmpty) {
+        continue;
+      }
+
+      rows.putIfAbsent(label, () => value);
+    }
+
+    return rows;
+  }
+
+  void _collectTeamStatNodes(
+    dynamic current,
+    List<Map<String, dynamic>> candidates,
+  ) {
+    if (current is Map<String, dynamic>) {
+      if (_looksLikeTeamStatNode(current)) {
+        candidates.add(current);
+      }
+
+      for (final value in current.values) {
+        _collectTeamStatNodes(value, candidates);
+      }
+      return;
+    }
+
+    if (current is List<dynamic>) {
+      for (final value in current) {
+        _collectTeamStatNodes(value, candidates);
+      }
+    }
+  }
+
+  bool _looksLikeTeamStatNode(Map<String, dynamic> node) {
+    final label = _readNestedDisplayValue(
+      node,
+      const [
+        'Nm',
+        'nm',
+        'name',
+        'StatName',
+        'statName',
+        'Label',
+        'label',
+        'Ttl',
+        'ttl',
+      ],
+      '',
+    );
+    final value = _readNestedDisplayValue(
+      node,
+      const [
+        'Stat',
+        'stat',
+        'Value',
+        'value',
+        'Val',
+        'val',
+        'Total',
+        'total',
+        'Cnt',
+        'cnt',
+        'S',
+        's',
+      ],
+      '',
+    );
+
+    return label.isNotEmpty && value.isNotEmpty;
+  }
+
   Widget _buildH2HTab() {
     return FutureBuilder<Map<String, dynamic>>(
       future: _h2hFuture,
@@ -1041,6 +1822,113 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
           children: [
             _buildH2HSection(h2h),
             const SizedBox(height: 24),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTableTab() {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _tableFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: CircularProgressIndicator(color: Colors.yellow.shade600),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return _buildSimpleInfoState(
+            title: 'Unable to load table',
+            message: '${snapshot.error}',
+            accentColor: Colors.red.shade300,
+          );
+        }
+
+        final table = snapshot.data ?? {};
+        final rows = _extractLeagueTableRows(table);
+
+        if (rows.isEmpty) {
+          return _buildSimpleInfoState(
+            title: 'No table available',
+            message: 'League standings are not available for this match yet.',
+            accentColor: Colors.orange.shade300,
+          );
+        }
+
+        final competitionName =
+            _readDisplayValue(table, const ['CompN', 'Snm', 'Sdn'], 'League Table');
+        final competitionSubtitle = _readDisplayValue(
+          table,
+          const ['CompD', 'CompST', 'Cnm'],
+          widget.match.country,
+        );
+
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.yellow.shade700.withOpacity(0.16),
+                    Colors.blue.shade400.withOpacity(0.08),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white.withOpacity(0.08)),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    competitionName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    competitionSubtitle,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.68),
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildTableBadge('Rows', '${rows.length}'),
+                      _buildTableBadge('Home', widget.match.homeTeam),
+                      _buildTableBadge('Away', widget.match.awayTeam),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF171717),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white.withOpacity(0.08)),
+              ),
+              child: Column(
+                children: [
+                  _buildTableHeaderRow(),
+                  Divider(color: Colors.white.withOpacity(0.08), height: 1),
+                  ...rows.take(20).map(_buildLeagueRow),
+                ],
+              ),
+            ),
           ],
         );
       },
@@ -1241,14 +2129,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
             ),
             const SizedBox(height: 24),
             OutlinedButton(
-              onPressed: () {
-                setState(() {
-                  _detailFuture = _liveScoreService.fetchMatchDetail(
-                    eid: widget.match.eid,
-                    category: widget.category,
-                  );
-                });
-              },
+              onPressed: _reloadAllData,
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: Colors.yellow.shade600),
               ),
@@ -1497,6 +2378,239 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     return Column(children: items);
   }
 
+  Widget _buildTeamDetailsSection() {
+    final hasAnyTeamId = widget.match.homeTeamId.trim().isNotEmpty ||
+        widget.match.awayTeamId.trim().isNotEmpty;
+
+    if (!hasAnyTeamId) {
+      return const SizedBox.shrink();
+    }
+
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: Future.wait([
+        _homeTeamDetailFuture,
+        _awayTeamDetailFuture,
+      ]),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF171717),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withOpacity(0.08)),
+            ),
+            padding: const EdgeInsets.all(20),
+            child: Center(
+              child: CircularProgressIndicator(color: Colors.yellow.shade600),
+            ),
+          );
+        }
+
+        final details = snapshot.data ?? const <Map<String, dynamic>>[];
+        final homeDetail = details.isNotEmpty ? details[0] : const <String, dynamic>{};
+        final awayDetail = details.length > 1 ? details[1] : const <String, dynamic>{};
+
+        if (homeDetail.isEmpty && awayDetail.isEmpty) {
+          return _buildInlineInfoCard(
+            title: 'Team Details',
+            message: 'No team detail data is available for this match yet.',
+            accentColor: Colors.orange.shade400,
+          );
+        }
+
+        return Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF171717),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withOpacity(0.08)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Team Details',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Divider(color: Colors.white.withOpacity(0.08), height: 1),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    _buildTeamDetailCard(
+                      teamName: widget.match.homeTeam,
+                      teamImage: widget.match.homeTeamImage,
+                      fallbackTeamId: widget.match.homeTeamId,
+                      detail: homeDetail,
+                      accentColor: Colors.yellow.shade600,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildTeamDetailCard(
+                      teamName: widget.match.awayTeam,
+                      teamImage: widget.match.awayTeamImage,
+                      fallbackTeamId: widget.match.awayTeamId,
+                      detail: awayDetail,
+                      accentColor: Colors.blue.shade300,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTeamDetailCard({
+    required String teamName,
+    required String teamImage,
+    required String fallbackTeamId,
+    required Map<String, dynamic> detail,
+    required Color accentColor,
+  }) {
+    final rows = _buildTeamDetailRows(detail, fallbackTeamId: fallbackTeamId);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: accentColor.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: accentColor.withOpacity(0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _buildMiniTeamBadge(teamName, teamImage, accentColor),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  teamName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...rows,
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildTeamDetailRows(
+    Map<String, dynamic> detail, {
+    required String fallbackTeamId,
+  }) {
+    final resolvedTeamId = _readNestedDisplayValue(
+      detail,
+      const ['ID', 'Id', 'id', 'Tid', 'team.id', 'team.ID'],
+      fallbackTeamId.trim(),
+    );
+    final country = _readNestedDisplayValue(
+      detail,
+      const [
+        'Country',
+        'country',
+        'Cnm',
+        'team.country',
+        'team.country.name',
+      ],
+      'N/A',
+    );
+    final stadium = _readNestedDisplayValue(
+      detail,
+      const [
+        'Stadium',
+        'stadium',
+        'Venue',
+        'venue',
+        'team.stadium',
+        'team.venue',
+      ],
+      'N/A',
+    );
+    final founded = _readNestedDisplayValue(
+      detail,
+      const [
+        'Founded',
+        'founded',
+        'YearFounded',
+        'yearFounded',
+        'team.founded',
+      ],
+      'N/A',
+    );
+    final manager = _readNestedDisplayValue(
+      detail,
+      const [
+        'Manager',
+        'manager',
+        'Coach',
+        'coach',
+        'team.manager.name',
+        'team.coach.name',
+      ],
+      'N/A',
+    );
+
+    final values = <MapEntry<String, String>>[
+      MapEntry('Team ID', resolvedTeamId.isEmpty ? 'N/A' : resolvedTeamId),
+      MapEntry('Country', country),
+      MapEntry('Stadium', stadium),
+      MapEntry('Founded', founded),
+      MapEntry('Manager', manager),
+    ];
+
+    return values
+        .map(
+          (entry) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 72,
+                  child: Text(
+                    entry.key,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.6),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    entry.value,
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        )
+        .toList();
+  }
+
   Widget _buildDetailItem(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1614,6 +2728,407 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     final minute = dateTime.minute.toString().padLeft(2, '0');
     final month = months[dateTime.month - 1];
     return '${dateTime.day} $month ${dateTime.year} at $hour:$minute';
+  }
+
+  Widget _buildSimpleInfoState({
+    required String title,
+    required String message,
+    required Color accentColor,
+  }) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF171717),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: accentColor.withOpacity(0.45)),
+          ),
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: accentColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                message,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.72),
+                  fontSize: 13,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInlineInfoCard({
+    required String title,
+    required String message,
+    required Color accentColor,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF171717),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: accentColor.withOpacity(0.45)),
+      ),
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: accentColor,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            message,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.72),
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTableBadge(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: '$label  ',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.55),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            TextSpan(
+              text: value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTableHeaderRow() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 14, 12, 10),
+      child: Row(
+        children: const [
+          SizedBox(width: 32, child: _TableHeaderText('#')),
+          Expanded(flex: 4, child: _TableHeaderText('Team')),
+          Expanded(child: _TableHeaderText('MP', align: TextAlign.center)),
+          Expanded(child: _TableHeaderText('W', align: TextAlign.center)),
+          Expanded(child: _TableHeaderText('D', align: TextAlign.center)),
+          Expanded(child: _TableHeaderText('L', align: TextAlign.center)),
+          Expanded(child: _TableHeaderText('GD', align: TextAlign.center)),
+          Expanded(child: _TableHeaderText('PTS', align: TextAlign.center)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLeagueRow(Map<String, dynamic> row) {
+    final teamId = _readDisplayValue(row, const ['Tid', 'teamId', 'ID'], '');
+    final teamName = _readDisplayValue(
+      row,
+      const ['Tnm', 'Nm', 'name'],
+      'Unknown',
+    );
+    final rank = _readDisplayValue(row, const ['rnk', 'rank', 'pos'], '-');
+    final played = _readDisplayValue(row, const ['pld', 'played'], '-');
+    final wins = _readDisplayValue(row, const ['win', 'winn', 'wins'], '-');
+    final draws = _readDisplayValue(row, const ['drw', 'drwn', 'draws'], '-');
+    final losses = _readDisplayValue(row, const ['lst', 'lstn', 'losses'], '-');
+    final goalDifference =
+        _readDisplayValue(row, const ['gd', 'goalDifference'], '-');
+    final points = _readDisplayValue(row, const ['ptsn', 'pts', 'points'], '-');
+    final teamImage = _readDisplayValue(row, const ['Img', 'img'], '');
+
+    final isHomeTeam = teamId == widget.match.homeTeamId;
+    final isAwayTeam = teamId == widget.match.awayTeamId;
+    final isHighlighted = isHomeTeam || isAwayTeam;
+    final accentColor = isHomeTeam
+        ? Colors.yellow.shade600
+        : isAwayTeam
+            ? Colors.blue.shade300
+            : Colors.white;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(8, 6, 8, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      decoration: BoxDecoration(
+        color: isHighlighted
+            ? accentColor.withOpacity(0.12)
+            : Colors.white.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isHighlighted
+              ? accentColor.withOpacity(0.45)
+              : Colors.transparent,
+        ),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 28,
+            child: Text(
+              rank,
+              style: TextStyle(
+                color: accentColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 4,
+            child: Row(
+              children: [
+                _buildMiniTeamBadge(teamName, teamImage, accentColor),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        teamName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (isHighlighted)
+                        Text(
+                          isHomeTeam ? 'Home side' : 'Away side',
+                          style: TextStyle(
+                            color: accentColor.withOpacity(0.92),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _buildTableValueCell(played),
+          _buildTableValueCell(wins),
+          _buildTableValueCell(draws),
+          _buildTableValueCell(losses),
+          _buildTableValueCell(goalDifference),
+          _buildTableValueCell(points, emphasize: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniTeamBadge(String teamName, String imagePath, Color accentColor) {
+    final imageUrl = _teamImageUrl(imagePath);
+    if (imageUrl != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Image.network(
+          imageUrl,
+          width: 28,
+          height: 28,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildMiniFallbackBadge(teamName, accentColor),
+        ),
+      );
+    }
+
+    return _buildMiniFallbackBadge(teamName, accentColor);
+  }
+
+  Widget _buildMiniFallbackBadge(String teamName, Color accentColor) {
+    return Container(
+      width: 28,
+      height: 28,
+      decoration: BoxDecoration(
+        color: accentColor.withOpacity(0.18),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        _initials(teamName),
+        style: TextStyle(
+          color: accentColor,
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTableValueCell(String value, {bool emphasize = false}) {
+    return Expanded(
+      child: Text(
+        value,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: emphasize ? Colors.white : Colors.white.withOpacity(0.8),
+          fontSize: 12,
+          fontWeight: emphasize ? FontWeight.w800 : FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  List<Map<String, dynamic>> _extractLeagueTableRows(Map<String, dynamic> tableData) {
+    final leagueTable = tableData['LeagueTable'];
+    if (leagueTable is! Map<String, dynamic>) {
+      return const [];
+    }
+
+    final groups = leagueTable['L'];
+    if (groups is! List) {
+      return const [];
+    }
+
+    final rows = <Map<String, dynamic>>[];
+    for (final group in groups) {
+      if (group is! Map<String, dynamic>) {
+        continue;
+      }
+
+      final tables = group['Tables'];
+      if (tables is! List) {
+        continue;
+      }
+
+      for (final table in tables) {
+        if (table is! Map<String, dynamic>) {
+          continue;
+        }
+
+        final teams = table['team'];
+        if (teams is! List) {
+          continue;
+        }
+
+        rows.addAll(teams.whereType<Map<String, dynamic>>());
+      }
+    }
+
+    return rows;
+  }
+
+  String _readDisplayValue(
+    Map<String, dynamic> source,
+    List<String> keys,
+    String fallback,
+  ) {
+    for (final key in keys) {
+      final value = source[key];
+      if (value == null) {
+        continue;
+      }
+
+      final text = value.toString().trim();
+      if (text.isNotEmpty) {
+        return text;
+      }
+    }
+
+    return fallback;
+  }
+
+  String _readNestedDisplayValue(
+    Map<String, dynamic> source,
+    List<String> paths,
+    String fallback,
+  ) {
+    for (final path in paths) {
+      dynamic current = source;
+
+      for (final part in path.split('.')) {
+        if (current is Map<String, dynamic>) {
+          current = current[part];
+          continue;
+        }
+
+        if (current is List<dynamic>) {
+          final index = int.tryParse(part);
+          if (index == null || index < 0 || index >= current.length) {
+            current = null;
+            break;
+          }
+          current = current[index];
+          continue;
+        }
+
+        current = null;
+        break;
+      }
+
+      if (current == null) {
+        continue;
+      }
+
+      final text = current.toString().trim();
+      if (text.isNotEmpty) {
+        return text;
+      }
+    }
+
+    return fallback;
+  }
+}
+
+class _TableHeaderText extends StatelessWidget {
+  final String text;
+  final TextAlign align;
+
+  const _TableHeaderText(this.text, {this.align = TextAlign.left});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      textAlign: align,
+      style: TextStyle(
+        color: Colors.white.withOpacity(0.45),
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.4,
+      ),
+    );
   }
 }
 

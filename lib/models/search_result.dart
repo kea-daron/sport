@@ -53,6 +53,8 @@ class SearchResult {
       competition: title,
       country: subtitle,
       countryCode: ccd,
+      homeTeamId: '',
+      awayTeamId: '',
       homeTeam: homeTeam.isNotEmpty ? homeTeam : title,
       awayTeam: awayTeam,
       homeTeamImage: '',
