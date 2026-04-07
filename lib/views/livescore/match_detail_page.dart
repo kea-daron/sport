@@ -2308,31 +2308,9 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
   }
 
   Widget _buildStatisticsSection(Map<String, dynamic> statistics) {
-    List<Map<String, dynamic>> stats = [];
+    final statRows = _extractMatchStatComparisonRows(statistics);
 
-    if (statistics.containsKey('stats') && statistics['stats'] is List) {
-      stats = (statistics['stats'] as List<dynamic>)
-          .whereType<Map<String, dynamic>>()
-          .toList();
-    } else if (statistics.containsKey('statistics') &&
-        statistics['statistics'] is List) {
-      stats = (statistics['statistics'] as List<dynamic>)
-          .whereType<Map<String, dynamic>>()
-          .toList();
-    } else if (statistics.containsKey('teams') && statistics['teams'] is Map) {
-      final teams = statistics['teams'] as Map<String, dynamic>;
-      for (final teamData in teams.values.whereType<Map<String, dynamic>>()) {
-        if (teamData.containsKey('statistics') &&
-            teamData['statistics'] is List) {
-          stats.addAll(
-            (teamData['statistics'] as List<dynamic>)
-                .whereType<Map<String, dynamic>>(),
-          );
-        }
-      }
-    }
-
-    if (stats.isEmpty) {
+    if (statRows.isEmpty) {
       return Container(
         decoration: BoxDecoration(
           color: const Color(0xFF171717),
@@ -2366,9 +2344,16 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF171717),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: const Color(0xFFF3F4F6)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2378,79 +2363,178 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
             child: Text(
               'Match Statistics',
               style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
+                color: Color(0xFF2F2151),
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.0,
               ),
             ),
           ),
-          Divider(color: Colors.white.withOpacity(0.08), height: 1),
+          const Divider(color: Color(0xFFF3F4F6), height: 1),
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
-              children: stats.take(10).map((stat) {
-                final statName =
-                    stat['name'] ?? stat['N'] ?? stat['nm'] ?? 'Stat';
-                final homeValue =
-                    stat['home'] ?? stat['T1'] ?? stat['v1'] ?? '-';
-                final awayValue =
-                    stat['away'] ?? stat['T2'] ?? stat['v2'] ?? '-';
-
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(8),
+              children: statRows
+                  .map(
+                    (stat) => Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _buildMatchStatBarRow(stat),
                     ),
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            homeValue.toString(),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.yellow.shade600,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            statName.toString(),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            awayValue.toString(),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.blue.shade400,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
+                  )
+                  .toList(),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildMatchStatBarRow(Map<String, String> stat) {
+    final homeText = stat['home'] ?? '0';
+    final awayText = stat['away'] ?? '0';
+    final label = stat['label'] ?? 'Stat';
+    final homeValue = double.tryParse(homeText) ?? 0;
+    final awayValue = double.tryParse(awayText) ?? 0;
+    final total = homeValue + awayValue;
+    final homePercent = total == 0 ? 50.0 : (homeValue / total) * 100;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                _formatStatDisplayValue(homeText),
+                style: const TextStyle(
+                  color: Color(0xFF374151),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFF9CA3AF),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                _formatStatDisplayValue(awayText),
+                textAlign: TextAlign.right,
+                style: const TextStyle(
+                  color: Color(0xFF374151),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: SizedBox(
+            height: 8,
+            child: Row(
+              children: [
+                Expanded(
+                  flex: math.max(1, (homePercent * 100).round()),
+                  child: Container(color: const Color(0xFFFFCE00)),
+                ),
+                Expanded(
+                  flex: math.max(1, ((100 - homePercent) * 100).round()),
+                  child: Container(color: const Color(0xFF2F2151)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Map<String, String>> _extractMatchStatComparisonRows(
+    Map<String, dynamic> statistics,
+  ) {
+    final selectedKeys = <String, String>{
+      'Pss': 'Possession (%)',
+      'Shon': 'Shots on target',
+      'Shof': 'Shots off target',
+      'Cos': 'Corner Kicks',
+      'Fls': 'Fouls',
+      'Ycs': 'Yellow cards',
+      'YRcs': 'Red cards',
+      'Ofs': 'Offsides',
+    };
+
+    final statList = <Map<String, dynamic>>[];
+    if (statistics['Stat'] is List<dynamic>) {
+      statList.addAll(
+        (statistics['Stat'] as List<dynamic>).whereType<Map<String, dynamic>>(),
+      );
+    } else if (statistics['Stats'] is List<dynamic>) {
+      statList.addAll(
+        (statistics['Stats'] as List<dynamic>)
+            .whereType<Map<String, dynamic>>(),
+      );
+    } else if (statistics['stats'] is List<dynamic>) {
+      statList.addAll(
+        (statistics['stats'] as List<dynamic>)
+            .whereType<Map<String, dynamic>>(),
+      );
+    } else if (statistics['statistics'] is List<dynamic>) {
+      statList.addAll(
+        (statistics['statistics'] as List<dynamic>)
+            .whereType<Map<String, dynamic>>(),
+      );
+    }
+
+    if (statList.length < 2 && statistics['teams'] is Map<String, dynamic>) {
+      final teams = statistics['teams'] as Map<String, dynamic>;
+      for (final teamData in teams.values.whereType<Map<String, dynamic>>()) {
+        if (teamData['statistics'] is Map<String, dynamic>) {
+          statList.add(
+            Map<String, dynamic>.from(
+              teamData['statistics'] as Map<String, dynamic>,
+            ),
+          );
+        } else if (teamData['statistics'] is List<dynamic>) {
+          statList.addAll(
+            (teamData['statistics'] as List<dynamic>)
+                .whereType<Map<String, dynamic>>(),
+          );
+        }
+      }
+    }
+
+    if (statList.length < 2) {
+      return const [];
+    }
+
+    final homeStats = statList[0];
+    final awayStats = statList[1];
+    return selectedKeys.entries
+        .map(
+          (entry) => {
+            'label': entry.value,
+            'home': _readDisplayValue(homeStats, [entry.key], '0'),
+            'away': _readDisplayValue(awayStats, [entry.key], '0'),
+          },
+        )
+        .toList();
+  }
+
+  String _formatStatDisplayValue(String raw) {
+    final trimmed = raw.trim();
+    return trimmed.isEmpty ? '0' : trimmed;
   }
 
   Widget _buildPlayerStatsTab() {
@@ -3374,6 +3458,10 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       matches = (h2hData['h2h'] as List<dynamic>)
           .whereType<Map<String, dynamic>>()
           .toList();
+    } else if (h2hData.containsKey('H2H') && h2hData['H2H'] is List) {
+      matches = (h2hData['H2H'] as List<dynamic>)
+          .whereType<Map<String, dynamic>>()
+          .toList();
     } else if (h2hData.containsKey('headToHead') &&
         h2hData['headToHead'] is List) {
       matches = (h2hData['headToHead'] as List<dynamic>)
@@ -3421,118 +3509,326 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       );
     }
 
+    return Column(
+      children: matches
+          .take(8)
+          .map(
+            (match) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildH2HMatchCard(match),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  Widget _buildH2HMatchCard(Map<String, dynamic> match) {
+    final stage = match['Stg'] as Map<String, dynamic>?;
+    final homeTeamData = _extractH2HTeam(match['T1']);
+    final awayTeamData = _extractH2HTeam(match['T2']);
+    final homeScore = _readNestedDisplayValue(match, const [
+      'Tr1',
+      'T1Sc',
+      'homeScore',
+    ], '-');
+    final awayScore = _readNestedDisplayValue(match, const [
+      'Tr2',
+      'T2Sc',
+      'awayScore',
+    ], '-');
+    final stageName = _readNestedDisplayValue(stage ?? const {}, const [
+      'Snm',
+      'snm',
+      'Nm',
+      'name',
+    ], 'League');
+    final formattedDate = _formatH2HDate(
+      _readNestedDisplayValue(match, const ['Esd', 'esd', 'date'], ''),
+    );
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF171717),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              'Head to Head History',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          Divider(color: Colors.white.withOpacity(0.08), height: 1),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: matches.take(5).map((match) {
-                final homeTeam =
-                    match['T1'] ?? match['t1'] ?? match['homeTeam'] ?? 'Home';
-                final awayTeam =
-                    match['T2'] ?? match['t2'] ?? match['awayTeam'] ?? 'Away';
-                final homeScore =
-                    match['Tr1'] ?? match['T1Sc'] ?? match['homeScore'] ?? '-';
-                final awayScore =
-                    match['Tr2'] ?? match['T2Sc'] ?? match['awayScore'] ?? '-';
-                final status = match['Eps'] ?? match['status'] ?? 'Finished';
-
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                homeTeam.toString(),
-                                textAlign: TextAlign.left,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                '${homeScore.toString()} - ${awayScore.toString()}',
-                                style: TextStyle(
-                                  color: Colors.yellow.shade600,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                awayTeam.toString(),
-                                textAlign: TextAlign.right,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          status.toString(),
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.5),
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
+        border: Border.all(color: const Color(0xFFF0F0F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.emoji_events_outlined,
+                        size: 12,
+                        color: Color(0xFF9CA3AF),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          stageName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF9CA3AF),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.calendar_today_outlined,
+                      size: 11,
+                      color: Color(0xFF9CA3AF),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      formattedDate,
+                      style: const TextStyle(
+                        color: Color(0xFF9CA3AF),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 10),
+              height: 1,
+              color: const Color(0xFFF3F4F6),
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          homeTeamData['name'] ?? 'Home',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                          style: TextStyle(
+                            color: _h2HWinningTextColor(
+                              homeScore,
+                              awayScore,
+                              true,
+                            ),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _buildH2HTeamLogo(
+                        homeTeamData['image'] ?? '',
+                        'Home Team',
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Row(
+                    children: [
+                      _buildH2HScoreBox(homeScore, awayScore),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Text(
+                          '-',
+                          style: TextStyle(
+                            color: Colors.grey.shade400,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      _buildH2HScoreBox(awayScore, homeScore),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      _buildH2HTeamLogo(
+                        awayTeamData['image'] ?? '',
+                        'Away Team',
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          awayTeamData['name'] ?? 'Away',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: _h2HWinningTextColor(
+                              awayScore,
+                              homeScore,
+                              true,
+                            ),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
+  }
+
+  Map<String, String> _extractH2HTeam(dynamic raw) {
+    if (raw is List<dynamic> &&
+        raw.isNotEmpty &&
+        raw.first is Map<String, dynamic>) {
+      final team = raw.first as Map<String, dynamic>;
+      return {
+        'name': _readNestedDisplayValue(team, const [
+          'Nm',
+          'name',
+          'Tnm',
+        ], 'Unknown'),
+        'image': _readNestedDisplayValue(team, const ['Img', 'img'], ''),
+      };
+    }
+
+    if (raw is Map<String, dynamic>) {
+      return {
+        'name': _readNestedDisplayValue(raw, const [
+          'Nm',
+          'name',
+          'Tnm',
+        ], 'Unknown'),
+        'image': _readNestedDisplayValue(raw, const ['Img', 'img'], ''),
+      };
+    }
+
+    return {'name': raw?.toString() ?? 'Unknown', 'image': ''};
+  }
+
+  Widget _buildH2HTeamLogo(String imagePath, String semanticLabel) {
+    final imageUrl = _teamImageUrl(imagePath);
+    return Container(
+      width: 32,
+      height: 32,
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFFF3F4F6)),
+      ),
+      child: imageUrl == null
+          ? const Icon(
+              Icons.shield_outlined,
+              size: 16,
+              color: Color(0xFF9CA3AF),
+            )
+          : Image.network(
+              imageUrl,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.shield_outlined,
+                size: 16,
+                color: Color(0xFF9CA3AF),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildH2HScoreBox(String score, String opponentScore) {
+    final colors = _h2HScoreColors(score, opponentScore);
+    return Container(
+      width: 28,
+      height: 28,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: colors['background']!,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colors['border']!),
+      ),
+      child: Text(
+        score,
+        style: TextStyle(
+          color: colors['text']!,
+          fontSize: 13,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
+  Map<String, Color> _h2HScoreColors(String score, String opponentScore) {
+    final current = int.tryParse(score) ?? 0;
+    final other = int.tryParse(opponentScore) ?? 0;
+    if (current > other) {
+      return {
+        'background': const Color(0xFFDCFCE7),
+        'text': Colors.black,
+        'border': const Color(0xFFBBF7D0),
+      };
+    }
+    if (current < other) {
+      return {
+        'background': const Color(0xFFFEE2E2),
+        'text': Colors.black,
+        'border': const Color(0xFFFECACA),
+      };
+    }
+    return {
+      'background': const Color(0xFF9CA3AF),
+      'text': Colors.white,
+      'border': const Color(0xFF6B7280),
+    };
+  }
+
+  Color _h2HWinningTextColor(
+    String score,
+    String opponentScore,
+    bool emphasis,
+  ) {
+    final current = int.tryParse(score) ?? 0;
+    final other = int.tryParse(opponentScore) ?? 0;
+    if (current > other && emphasis) {
+      return Colors.black;
+    }
+    return const Color(0xFF6B7280);
+  }
+
+  String _formatH2HDate(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.length >= 8) {
+      final year = trimmed.substring(0, 4);
+      final month = trimmed.substring(4, 6);
+      final day = trimmed.substring(6, 8);
+      return '$day/$month/$year';
+    }
+    return '-';
   }
 
   Widget _buildErrorWidget(String error) {
