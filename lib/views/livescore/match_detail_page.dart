@@ -1341,9 +1341,12 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
             ),
             clipBehavior: Clip.antiAlias,
             child: AspectRatio(
-              aspectRatio: 16 / 9,
+              aspectRatio: MediaQuery.of(context).size.width < 760
+                  ? 9 / 16
+                  : 16 / 9,
               child: LayoutBuilder(
                 builder: (context, constraints) {
+                  final isCompact = constraints.maxWidth < 760;
                   final fieldSize = Size(
                     constraints.maxWidth,
                     constraints.maxHeight,
@@ -1351,17 +1354,21 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                   return Stack(
                     children: [
                       Positioned.fill(
-                        child: CustomPaint(painter: FootballFieldPainter()),
+                        child: CustomPaint(
+                          painter: FootballFieldPainter(isCompact: isCompact),
+                        ),
                       ),
                       ..._buildTeamFormationNodes(
                         homeTeam,
                         isHome: true,
                         fieldSize: fieldSize,
+                        isCompact: isCompact,
                       ),
                       ..._buildTeamFormationNodes(
                         awayTeam,
                         isHome: false,
                         fieldSize: fieldSize,
+                        isCompact: isCompact,
                       ),
                     ],
                   );
@@ -1627,6 +1634,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     Map<String, dynamic> teamData, {
     required bool isHome,
     required Size fieldSize,
+    required bool isCompact,
   }) {
     final players =
         (teamData['players'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ??
@@ -1635,9 +1643,13 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     if (players.isEmpty) {
       return [
         Positioned(
-          left: isHome ? fieldSize.width * 0.14 : fieldSize.width * 0.64,
-          top: fieldSize.height * 0.44,
-          width: fieldSize.width * 0.22,
+          left: isCompact
+              ? fieldSize.width * 0.25
+              : (isHome ? fieldSize.width * 0.14 : fieldSize.width * 0.64),
+          top: isCompact
+              ? (isHome ? fieldSize.height * 0.18 : fieldSize.height * 0.72)
+              : fieldSize.height * 0.44,
+          width: isCompact ? fieldSize.width * 0.50 : fieldSize.width * 0.22,
           child: Text(
             'No lineup data',
             textAlign: TextAlign.center,
@@ -1664,9 +1676,6 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) {
       final rowPlayers = rows[rowIndex];
       final depthT = totalRows == 1 ? 0.5 : rowIndex / (totalRows - 1);
-      final xFactor = isHome
-          ? (0.08 + (0.36 * depthT))
-          : (0.92 - (0.36 * depthT));
 
       for (
         var playerIndex = 0;
@@ -1674,15 +1683,35 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
         playerIndex++
       ) {
         final player = rowPlayers[playerIndex];
-        final yFactor = rowPlayers.length == 1
+        final spreadFactor = rowPlayers.length == 1
             ? 0.50
             : 0.12 + ((0.76 / (rowPlayers.length - 1)) * playerIndex);
-        const cardWidth = 92.0;
+        final cardWidth = isCompact ? 80.0 : 92.0;
+        final top = isCompact
+            ? _compactFormationTop(
+                rowIndex: rowIndex,
+                totalRows: totalRows,
+                spreadFactor: spreadFactor,
+                isHome: isHome,
+                fieldHeight: fieldSize.height,
+              )
+            : (fieldSize.height * spreadFactor) - 48;
+        final left = isCompact
+            ? _compactFormationLeft(
+                spreadFactor: spreadFactor,
+                fieldWidth: fieldSize.width,
+                cardWidth: cardWidth,
+              )
+            : (fieldSize.width *
+                      (isHome
+                          ? (0.08 + (0.36 * depthT))
+                          : (0.92 - (0.36 * depthT))) -
+                  (cardWidth / 2));
 
         widgets.add(
           Positioned(
-            left: (fieldSize.width * xFactor) - (cardWidth / 2),
-            top: (fieldSize.height * yFactor) - 48,
+            left: left,
+            top: top,
             width: cardWidth,
             child: _buildFormationPlayerCard(player, isHome: isHome),
           ),
@@ -1691,6 +1720,27 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     }
 
     return widgets;
+  }
+
+  double _compactFormationTop({
+    required int rowIndex,
+    required int totalRows,
+    required double spreadFactor,
+    required bool isHome,
+    required double fieldHeight,
+  }) {
+    final depthT = totalRows == 1 ? 0.5 : rowIndex / (totalRows - 1);
+    final depth = isHome ? (0.12 + (0.30 * depthT)) : (0.88 - (0.30 * depthT));
+    final rowOffset = (spreadFactor - 0.5) * 20;
+    return (fieldHeight * depth) - 42 + rowOffset;
+  }
+
+  double _compactFormationLeft({
+    required double spreadFactor,
+    required double fieldWidth,
+    required double cardWidth,
+  }) {
+    return (fieldWidth * spreadFactor) - (cardWidth / 2);
   }
 
   List<List<Map<String, dynamic>>> _buildFormationRows(
@@ -1762,33 +1812,36 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     final numberColor = isHome ? Colors.black : Colors.white;
     final ratingColor = _lineupRatingColor(rating);
     final eventColor = _lineupEventColor(eventText);
+    final numberLength = number.trim().length;
+    final badgeSize = numberLength >= 3 ? 22.0 : 26.0;
+    final numberFontSize = numberLength >= 3 ? 6.5 : 8.0;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         if (rating.isNotEmpty)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
             decoration: BoxDecoration(
               color: ratingColor,
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(4),
               border: Border.all(color: Colors.white.withOpacity(0.25)),
             ),
             child: Text(
               rating,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 11,
+                fontSize: 8,
                 fontWeight: FontWeight.w800,
               ),
             ),
           )
         else
-          const SizedBox(height: 20),
-        const SizedBox(height: 4),
+          const SizedBox(height: 14),
+        const SizedBox(height: 3),
         Container(
-          width: 48,
-          height: 48,
+          width: badgeSize,
+          height: badgeSize,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: shirtColor,
@@ -1807,17 +1860,17 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
             style: TextStyle(
               color: numberColor,
               fontWeight: FontWeight.w800,
-              fontSize: 20,
+              fontSize: numberFontSize,
             ),
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 3),
         Container(
-          constraints: const BoxConstraints(minWidth: 52, maxWidth: 88),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          constraints: const BoxConstraints(minWidth: 24, maxWidth: 48),
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
           decoration: BoxDecoration(
             color: Colors.black.withOpacity(0.55),
-            borderRadius: BorderRadius.circular(7),
+            borderRadius: BorderRadius.circular(5),
           ),
           child: Text(
             name,
@@ -1826,7 +1879,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 10,
+              fontSize: 5,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -5021,6 +5074,10 @@ class _TableHeaderText extends StatelessWidget {
 }
 
 class FootballFieldPainter extends CustomPainter {
+  final bool isCompact;
+
+  FootballFieldPainter({this.isCompact = false});
+
   @override
   void paint(Canvas canvas, Size size) {
     final fieldPaint = Paint()
@@ -5039,11 +5096,16 @@ class FootballFieldPainter extends CustomPainter {
     final stripePaint = Paint()
       ..color = Colors.white.withOpacity(0.035)
       ..style = PaintingStyle.fill;
-    final stripeWidth = size.width / 10;
-    for (var i = 0; i < 10; i++) {
+    final stripeCount = 10;
+    final stripeWidth = isCompact
+        ? size.height / stripeCount
+        : size.width / stripeCount;
+    for (var i = 0; i < stripeCount; i++) {
       if (i.isEven) {
         canvas.drawRect(
-          Rect.fromLTWH(i * stripeWidth, 0, stripeWidth, size.height),
+          isCompact
+              ? Rect.fromLTWH(0, i * stripeWidth, size.width, stripeWidth)
+              : Rect.fromLTWH(i * stripeWidth, 0, stripeWidth, size.height),
           stripePaint,
         );
       }
@@ -5056,13 +5118,15 @@ class FootballFieldPainter extends CustomPainter {
 
     canvas.drawCircle(
       Offset(size.width / 2, size.height / 2),
-      size.height * 0.10,
+      (isCompact ? size.width : size.height) * 0.10,
       linePaint,
     );
 
     canvas.drawLine(
-      Offset(size.width / 2, 14),
-      Offset(size.width / 2, size.height - 14),
+      isCompact ? Offset(14, size.height / 2) : Offset(size.width / 2, 14),
+      isCompact
+          ? Offset(size.width - 14, size.height / 2)
+          : Offset(size.width / 2, size.height - 14),
       linePaint,
     );
 
@@ -5074,56 +5138,108 @@ class FootballFieldPainter extends CustomPainter {
         ..style = PaintingStyle.fill,
     );
 
-    final boxHeight = size.height * 0.30;
-    final goalBoxHeight = size.height * 0.16;
-    final penaltyWidth = size.width * 0.12;
-    final goalBoxWidth = size.width * 0.06;
-    final top = (size.height - boxHeight) / 2;
-    final goalTop = (size.height - goalBoxHeight) / 2;
+    if (isCompact) {
+      final boxWidth = size.width * 0.30;
+      final goalBoxWidth = size.width * 0.16;
+      final penaltyHeight = size.height * 0.12;
+      final goalBoxHeight = size.height * 0.06;
+      final left = (size.width - boxWidth) / 2;
+      final goalLeft = (size.width - goalBoxWidth) / 2;
 
-    canvas.drawRect(Rect.fromLTWH(14, top, penaltyWidth, boxHeight), linePaint);
+      canvas.drawRect(
+        Rect.fromLTWH(left, 14, boxWidth, penaltyHeight),
+        linePaint,
+      );
+      canvas.drawRect(
+        Rect.fromLTWH(
+          left,
+          size.height - 14 - penaltyHeight,
+          boxWidth,
+          penaltyHeight,
+        ),
+        linePaint,
+      );
+      canvas.drawRect(
+        Rect.fromLTWH(goalLeft, 14, goalBoxWidth, goalBoxHeight),
+        linePaint,
+      );
+      canvas.drawRect(
+        Rect.fromLTWH(
+          goalLeft,
+          size.height - 14 - goalBoxHeight,
+          goalBoxWidth,
+          goalBoxHeight,
+        ),
+        linePaint,
+      );
 
-    canvas.drawRect(
-      Rect.fromLTWH(
-        size.width - 14 - penaltyWidth,
-        top,
-        penaltyWidth,
-        boxHeight,
-      ),
-      linePaint,
-    );
+      canvas.drawCircle(
+        Offset(size.width / 2, 14 + (penaltyHeight * 0.62)),
+        2.4,
+        Paint()
+          ..color = Colors.white.withOpacity(0.72)
+          ..style = PaintingStyle.fill,
+      );
+      canvas.drawCircle(
+        Offset(size.width / 2, size.height - 14 - (penaltyHeight * 0.62)),
+        2.4,
+        Paint()
+          ..color = Colors.white.withOpacity(0.72)
+          ..style = PaintingStyle.fill,
+      );
+    } else {
+      final boxHeight = size.height * 0.30;
+      final goalBoxHeight = size.height * 0.16;
+      final penaltyWidth = size.width * 0.12;
+      final goalBoxWidth = size.width * 0.06;
+      final top = (size.height - boxHeight) / 2;
+      final goalTop = (size.height - goalBoxHeight) / 2;
 
-    canvas.drawRect(
-      Rect.fromLTWH(14, goalTop, goalBoxWidth, goalBoxHeight),
-      linePaint,
-    );
+      canvas.drawRect(
+        Rect.fromLTWH(14, top, penaltyWidth, boxHeight),
+        linePaint,
+      );
+      canvas.drawRect(
+        Rect.fromLTWH(
+          size.width - 14 - penaltyWidth,
+          top,
+          penaltyWidth,
+          boxHeight,
+        ),
+        linePaint,
+      );
+      canvas.drawRect(
+        Rect.fromLTWH(14, goalTop, goalBoxWidth, goalBoxHeight),
+        linePaint,
+      );
+      canvas.drawRect(
+        Rect.fromLTWH(
+          size.width - 14 - goalBoxWidth,
+          goalTop,
+          goalBoxWidth,
+          goalBoxHeight,
+        ),
+        linePaint,
+      );
 
-    canvas.drawRect(
-      Rect.fromLTWH(
-        size.width - 14 - goalBoxWidth,
-        goalTop,
-        goalBoxWidth,
-        goalBoxHeight,
-      ),
-      linePaint,
-    );
-
-    canvas.drawCircle(
-      Offset(14 + (penaltyWidth * 0.62), size.height / 2),
-      2.4,
-      Paint()
-        ..color = Colors.white.withOpacity(0.72)
-        ..style = PaintingStyle.fill,
-    );
-    canvas.drawCircle(
-      Offset(size.width - 14 - (penaltyWidth * 0.62), size.height / 2),
-      2.4,
-      Paint()
-        ..color = Colors.white.withOpacity(0.72)
-        ..style = PaintingStyle.fill,
-    );
+      canvas.drawCircle(
+        Offset(14 + (penaltyWidth * 0.62), size.height / 2),
+        2.4,
+        Paint()
+          ..color = Colors.white.withOpacity(0.72)
+          ..style = PaintingStyle.fill,
+      );
+      canvas.drawCircle(
+        Offset(size.width - 14 - (penaltyWidth * 0.62), size.height / 2),
+        2.4,
+        Paint()
+          ..color = Colors.white.withOpacity(0.72)
+          ..style = PaintingStyle.fill,
+      );
+    }
   }
 
   @override
-  bool shouldRepaint(FootballFieldPainter oldDelegate) => false;
+  bool shouldRepaint(FootballFieldPainter oldDelegate) =>
+      oldDelegate.isCompact != isCompact;
 }
