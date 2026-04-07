@@ -37,15 +37,16 @@ class LiveScoreService {
       );
     }
 
-    final uri = Uri.parse(
-      '${ApiConfig.liveScoreBaseUrl}${ApiConfig.liveScorePath}',
-    ).replace(
-      queryParameters: {
-        'Category': category,
-        'Date': _formatDate(date),
-        'Timezone': timezone.toString(),
-      },
-    );
+    final uri =
+        Uri.parse(
+          '${ApiConfig.liveScoreBaseUrl}${ApiConfig.liveScorePath}',
+        ).replace(
+          queryParameters: {
+            'Category': category,
+            'Date': _formatDate(date),
+            'Timezone': timezone.toString(),
+          },
+        );
 
     final response = await _retryWithBackoff(
       () => http.get(
@@ -75,7 +76,6 @@ class LiveScoreService {
     return matches;
   }
 
-
   Future<List<MatchItem>> fetchLiveMatches({
     required String category,
     double timezone = -7,
@@ -92,14 +92,15 @@ class LiveScoreService {
       );
     }
 
-    final uri = Uri.parse(
-      '${ApiConfig.liveScoreBaseUrl}${ApiConfig.liveScoreLivePath}',
-    ).replace(
-      queryParameters: {
-        'Category': category,
-        'Timezone': timezone.toString(),
-      },
-    );
+    final uri =
+        Uri.parse(
+          '${ApiConfig.liveScoreBaseUrl}${ApiConfig.liveScoreLivePath}',
+        ).replace(
+          queryParameters: {
+            'Category': category,
+            'Timezone': timezone.toString(),
+          },
+        );
 
     final response = await _retryWithBackoff(
       () => http.get(
@@ -146,15 +147,16 @@ class LiveScoreService {
       );
     }
 
-    final uri = Uri.parse(
-      '${ApiConfig.liveScoreBaseUrl}${ApiConfig.liveScorePath}',
-    ).replace(
-      queryParameters: {
-        'Category': category,
-        'Date': _formatDate(date),
-        'Timezone': timezone.toString(),
-      },
-    );
+    final uri =
+        Uri.parse(
+          '${ApiConfig.liveScoreBaseUrl}${ApiConfig.liveScorePath}',
+        ).replace(
+          queryParameters: {
+            'Category': category,
+            'Date': _formatDate(date),
+            'Timezone': timezone.toString(),
+          },
+        );
 
     final response = await _retryWithBackoff(
       () => http.get(
@@ -196,11 +198,7 @@ class LiveScoreService {
 
     final uri = Uri.parse(
       '${ApiConfig.liveScoreBaseUrl}/leagues/v2/list-popular',
-    ).replace(
-      queryParameters: {
-        'Category': category,
-      },
-    );
+    ).replace(queryParameters: {'Category': category});
 
     final response = await _retryWithBackoff(
       () => http.get(
@@ -242,11 +240,7 @@ class LiveScoreService {
 
     final uri = Uri.parse(
       '${ApiConfig.liveScoreBaseUrl}/leagues/v2/list-popular',
-    ).replace(
-      queryParameters: {
-        'Category': category,
-      },
-    );
+    ).replace(queryParameters: {'Category': category});
 
     final response = await _retryWithBackoff(
       () => http.get(
@@ -292,13 +286,8 @@ class LiveScoreService {
       );
     }
 
-    final uri = Uri.parse(
-      '${ApiConfig.liveScoreBaseUrl}/v2/search',
-    ).replace(
-      queryParameters: {
-        'Category': category,
-        'Query': normalizedQuery,
-      },
+    final uri = Uri.parse('${ApiConfig.liveScoreBaseUrl}/v2/search').replace(
+      queryParameters: {'Category': category, 'Query': normalizedQuery},
     );
 
     final response = await _retryWithBackoff(
@@ -340,7 +329,7 @@ class LiveScoreService {
     }
 
     final popularLeagues = await fetchPopularLeagues(category: category);
-    
+
     final matchesList = <MatchItem>[];
     for (final league in popularLeagues.take(10)) {
       try {
@@ -405,7 +394,9 @@ class LiveScoreService {
       }
     }
 
-    throw Exception('LiveScore league request returned an empty response (302).');
+    throw Exception(
+      'LiveScore league request returned an empty response (302).',
+    );
   }
 
   Future<List<MatchItem>?> _fetchMatchesByLeagueAttempt({
@@ -541,12 +532,10 @@ class LiveScoreService {
       );
     }
 
-    final uri = Uri.parse('${ApiConfig.liveScoreBaseUrl}/news/v2/list-by-sport').replace(
-      queryParameters: {
-        'category': categoryId,
-        'page': page.toString(),
-      },
-    );
+    final uri = Uri.parse('${ApiConfig.liveScoreBaseUrl}/news/v2/list-by-sport')
+        .replace(
+          queryParameters: {'category': categoryId, 'page': page.toString()},
+        );
 
     print('DEBUG: Fetching news from $uri');
 
@@ -569,11 +558,13 @@ class LiveScoreService {
 
     try {
       final dynamic decoded = jsonDecode(response.body);
-      print('DEBUG: News response keys: ${decoded is Map ? decoded.keys.toList() : 'Not a map'}');
-      
+      print(
+        'DEBUG: News response keys: ${decoded is Map ? decoded.keys.toList() : 'Not a map'}',
+      );
+
       // Try to extract news items - handle both array and object responses
       List<NewsItem> newsItems = [];
-      
+
       if (decoded is List<dynamic>) {
         // If response is directly an array of news items
         newsItems = decoded
@@ -585,13 +576,13 @@ class LiveScoreService {
         // Use standard extraction for object responses
         newsItems = _extractNewsItems(decoded).toList();
       }
-      
+
       if (newsItems.isEmpty) {
         print('DEBUG: No news items extracted, returning empty list');
       } else {
         print('DEBUG: Extracted ${newsItems.length} news items');
       }
-      
+
       _cache.set(cacheKey, newsItems, ttl: const Duration(minutes: 15));
       return newsItems;
     } catch (e) {
@@ -624,11 +615,7 @@ class LiveScoreService {
 
     final uri = Uri.parse(
       '${ApiConfig.liveScoreBaseUrl}/news/v2/detail',
-    ).replace(
-      queryParameters: {
-        'id': normalizedId,
-      },
-    );
+    ).replace(queryParameters: {'id': normalizedId});
 
     final response = await _retryWithBackoff(
       () => http.get(
@@ -679,12 +666,7 @@ class LiveScoreService {
 
     final uri = Uri.parse(
       '${ApiConfig.liveScoreBaseUrl}/matches/v2/get-info',
-    ).replace(
-      queryParameters: {
-        'Eid': eid,
-        'Category': category,
-      },
-    );
+    ).replace(queryParameters: {'Eid': eid, 'Category': category});
 
     final response = await _retryWithBackoff(
       () => http.get(
@@ -712,12 +694,63 @@ class LiveScoreService {
     return decoded;
   }
 
+  Future<Map<String, dynamic>> fetchScoreboard({
+    required String eid,
+    required String category,
+  }) async {
+    final cacheKey = 'match_scoreboard_${eid}_$category';
+    final cached = _cache.get<Map<String, dynamic>>(cacheKey);
+    if (cached != null) {
+      return cached;
+    }
+
+    if (!ApiConfig.isConfigured) {
+      throw Exception(
+        'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
+      );
+    }
+
+    final uri = Uri.parse(
+      '${ApiConfig.liveScoreBaseUrl}/matches/v2/get-scoreboard',
+    ).replace(queryParameters: {'Eid': eid, 'Category': category});
+
+    final response = await _retryWithBackoff(
+      () => http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+          'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+        },
+      ),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'LiveScore scoreboard request failed: ${response.statusCode} ${response.reasonPhrase}',
+      );
+    }
+
+    final body = response.body.trim();
+    if (body.isEmpty || body == '{}' || body == '[]') {
+      return const {};
+    }
+
+    final dynamic decoded = jsonDecode(body);
+    if (decoded is! Map<String, dynamic>) {
+      throw Exception('Invalid scoreboard response format');
+    }
+
+    _cache.set(cacheKey, decoded, ttl: const Duration(minutes: 3));
+    return decoded;
+  }
+
   Future<Map<String, dynamic>> fetchLineups({
     required String eid,
     required String category,
   }) async {
     print('DEBUG: fetchLineups called with EID = $eid, Category = $category');
-    
+
     final cacheKey = 'match_lineups_${eid}_$category';
     final cached = _cache.get<Map<String, dynamic>>(cacheKey);
     if (cached != null) {
@@ -733,22 +766,16 @@ class LiveScoreService {
 
     final uri = Uri.parse(
       '${ApiConfig.liveScoreBaseUrl}/matches/v2/get-lineups',
-    ).replace(
-      queryParameters: {
-        'Eid': eid,
-        'Category': category,
-      },
-    );
-    
+    ).replace(queryParameters: {'Category': category, 'Eid': eid});
+
     print('DEBUG: Lineups API URL = ${uri.toString()}');
 
     final response = await _retryWithBackoff(
       () => http.get(
         uri,
         headers: {
-          'Content-Type': 'application/json',
-          'x-rapidapi-key': ApiConfig.liveScoreApiKey,
-          'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+          'X-RapidAPI-Key': ApiConfig.liveScoreApiKey,
+          'X-RapidAPI-Host': ApiConfig.liveScoreApiHost,
         },
       ),
     );
@@ -761,14 +788,14 @@ class LiveScoreService {
 
     // Parse the response - handle various formats
     Map<String, dynamic> lineupsData = {};
-    
+
     try {
       final dynamic decoded = jsonDecode(response.body);
-      
+
       if (decoded is Map<String, dynamic>) {
         // Log the structure for debugging (in production, this helps us understand API responses)
         print('DEBUG: Lineups response keys: ${decoded.keys.toList()}');
-        
+
         // Check for data in various possible keys
         if (decoded.containsKey('pl')) {
           // Direct players array at top level
@@ -839,8 +866,10 @@ class LiveScoreService {
     required String eid,
     required String category,
   }) async {
-    print('DEBUG: fetchStatistics called with EID = $eid, Category = $category');
-    
+    print(
+      'DEBUG: fetchStatistics called with EID = $eid, Category = $category',
+    );
+
     final cacheKey = 'match_statistics_${eid}_$category';
     final cached = _cache.get<Map<String, dynamic>>(cacheKey);
     if (cached != null) {
@@ -856,13 +885,8 @@ class LiveScoreService {
 
     final uri = Uri.parse(
       '${ApiConfig.liveScoreBaseUrl}/matches/v2/get-statistics',
-    ).replace(
-      queryParameters: {
-        'Eid': eid,
-        'Category': category,
-      },
-    );
-    
+    ).replace(queryParameters: {'Eid': eid, 'Category': category});
+
     print('DEBUG: Statistics API URL = ${uri.toString()}');
 
     final response = await _retryWithBackoff(
@@ -884,13 +908,13 @@ class LiveScoreService {
 
     // Parse the response - handle various formats
     Map<String, dynamic> statisticsData = {};
-    
+
     try {
       final dynamic decoded = jsonDecode(response.body);
-      
+
       if (decoded is Map<String, dynamic>) {
         print('DEBUG: Statistics response keys: ${decoded.keys.toList()}');
-        
+
         // Check for data in various possible keys
         if (decoded.containsKey('stats')) {
           // Direct stats array at top level
@@ -950,7 +974,7 @@ class LiveScoreService {
     required String category,
   }) async {
     print('DEBUG: fetchH2H called with EID = $eid, Category = $category');
-    
+
     final cacheKey = 'match_h2h_${eid}_$category';
     final cached = _cache.get<Map<String, dynamic>>(cacheKey);
     if (cached != null) {
@@ -966,13 +990,8 @@ class LiveScoreService {
 
     final uri = Uri.parse(
       '${ApiConfig.liveScoreBaseUrl}/matches/v2/get-h2h',
-    ).replace(
-      queryParameters: {
-        'Eid': eid,
-        'Category': category,
-      },
-    );
-    
+    ).replace(queryParameters: {'Eid': eid, 'Category': category});
+
     print('DEBUG: H2H API URL = ${uri.toString()}');
 
     final response = await _retryWithBackoff(
@@ -994,13 +1013,13 @@ class LiveScoreService {
 
     // Parse the response - handle various formats
     Map<String, dynamic> h2hData = {};
-    
+
     try {
       final dynamic decoded = jsonDecode(response.body);
-      
+
       if (decoded is Map<String, dynamic>) {
         print('DEBUG: H2H response keys: ${decoded.keys.toList()}');
-        
+
         // Check for data in various possible keys
         if (decoded.containsKey('h2h')) {
           // Direct h2h array at top level
@@ -1079,12 +1098,7 @@ class LiveScoreService {
 
     final uri = Uri.parse(
       '${ApiConfig.liveScoreBaseUrl}/teams/get-table',
-    ).replace(
-      queryParameters: {
-        'ID': normalizedTeamId,
-        'Type': type,
-      },
-    );
+    ).replace(queryParameters: {'ID': normalizedTeamId, 'Type': type});
 
     final response = await _retryWithBackoff(
       () => http.get(
@@ -1117,9 +1131,7 @@ class LiveScoreService {
     return decoded;
   }
 
-  Future<Map<String, dynamic>> fetchTeamDetail({
-    required String teamId,
-  }) async {
+  Future<Map<String, dynamic>> fetchTeamDetail({required String teamId}) async {
     final normalizedTeamId = teamId.trim();
     if (normalizedTeamId.isEmpty) {
       return const {};
@@ -1139,11 +1151,9 @@ class LiveScoreService {
 
     final uri = Uri.parse(
       '${ApiConfig.liveScoreBaseUrl}/teams/detail',
-    ).replace(
-      queryParameters: {
-        'ID': normalizedTeamId,
-      },
-    );
+    ).replace(queryParameters: {'ID': normalizedTeamId});
+
+    print('DEBUG: Team detail API URL = ${uri.toString()}');
 
     final response = await _retryWithBackoff(
       () => http.get(
@@ -1168,12 +1178,105 @@ class LiveScoreService {
     }
 
     final dynamic decoded = jsonDecode(body);
-    if (decoded is! Map<String, dynamic>) {
-      throw Exception('Invalid team detail response format');
+    final normalized = _normalizeTeamDetailResponse(decoded);
+    if (normalized.isEmpty) {
+      print('DEBUG: Team detail response was empty after normalization');
+      return const {};
     }
 
-    _cache.set(cacheKey, decoded, ttl: const Duration(minutes: 15));
-    return decoded;
+    print('DEBUG: Team detail response keys: ${normalized.keys.toList()}');
+    _cache.set(cacheKey, normalized, ttl: const Duration(minutes: 15));
+    return normalized;
+  }
+
+  Map<String, dynamic> _normalizeTeamDetailResponse(dynamic decoded) {
+    if (decoded is Map<String, dynamic>) {
+      if (_looksLikeTeamDetailMap(decoded)) {
+        return decoded;
+      }
+
+      for (final key in const [
+        'team',
+        'Team',
+        'data',
+        'Data',
+        'response',
+        'Response',
+        'details',
+        'Details',
+      ]) {
+        final value = decoded[key];
+        if (value is Map<String, dynamic>) {
+          if (_looksLikeTeamDetailMap(value)) {
+            return value;
+          }
+
+          for (final nestedKey in const [
+            'team',
+            'Team',
+            'details',
+            'Details',
+          ]) {
+            final nested = value[nestedKey];
+            if (nested is Map<String, dynamic> &&
+                _looksLikeTeamDetailMap(nested)) {
+              return nested;
+            }
+          }
+        }
+      }
+
+      for (final value in decoded.values) {
+        final nested = _normalizeTeamDetailResponse(value);
+        if (nested.isNotEmpty) {
+          return nested;
+        }
+      }
+    }
+
+    if (decoded is List<dynamic>) {
+      for (final item in decoded) {
+        final nested = _normalizeTeamDetailResponse(item);
+        if (nested.isNotEmpty) {
+          return nested;
+        }
+      }
+    }
+
+    return const {};
+  }
+
+  bool _looksLikeTeamDetailMap(Map<String, dynamic> source) {
+    const keys = [
+      'ID',
+      'Id',
+      'id',
+      'Tid',
+      'Tnm',
+      'Nm',
+      'name',
+      'Country',
+      'country',
+      'Venue',
+      'venue',
+      'Stadium',
+      'stadium',
+      'Manager',
+      'manager',
+      'Coach',
+      'coach',
+      'Founded',
+      'founded',
+    ];
+
+    for (final key in keys) {
+      final value = source[key];
+      if (value != null && value.toString().trim().isNotEmpty) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   Future<Map<String, dynamic>> fetchTeamPlayerStats({
@@ -1216,9 +1319,7 @@ class LiveScoreService {
 
     final uri = Uri.parse(
       '${ApiConfig.liveScoreBaseUrl}/teams/get-player-stats',
-    ).replace(
-      queryParameters: queryParameters,
-    );
+    ).replace(queryParameters: queryParameters);
 
     final response = await _retryWithBackoff(
       () => http.get(
@@ -1262,7 +1363,8 @@ class LiveScoreService {
     }
 
     final normalizedCompId = compId?.trim() ?? '';
-    final cacheKey = 'team_stats_${normalizedTeamId}_${normalizedCompId}_$stype';
+    final cacheKey =
+        'team_stats_${normalizedTeamId}_${normalizedCompId}_$stype';
     final cached = _cache.get<Map<String, dynamic>>(cacheKey);
     if (cached != null) {
       return cached;
@@ -1285,9 +1387,7 @@ class LiveScoreService {
 
     final uri = Uri.parse(
       '${ApiConfig.liveScoreBaseUrl}/teams/get-team-stats',
-    ).replace(
-      queryParameters: queryParameters,
-    );
+    ).replace(queryParameters: queryParameters);
 
     final response = await _retryWithBackoff(
       () => http.get(
@@ -1360,10 +1460,7 @@ class LiveScoreService {
     throw Exception('Max retries exceeded');
   }
 
-  List<LeagueOption> _extractLeagueOptions(
-    dynamic decoded,
-    String category,
-  ) {
+  List<LeagueOption> _extractLeagueOptions(dynamic decoded, String category) {
     final stages = _extractStages(decoded);
     final options = <LeagueOption>[];
     final seen = <String>{};
@@ -1373,18 +1470,22 @@ class LiveScoreService {
         continue;
       }
 
-      final ccd = _readString(
-        stage,
-        const ['Ccd', 'ccd', 'CompCcd', 'competitionCode'],
-      );
+      final ccd = _readString(stage, const [
+        'Ccd',
+        'ccd',
+        'CompCcd',
+        'competitionCode',
+      ]);
       if (ccd.isEmpty) {
         continue;
       }
 
-      final scd = _readString(
-        stage,
-        const ['Scd', 'scd', 'stageCode', 'groupCode'],
-      );
+      final scd = _readString(stage, const [
+        'Scd',
+        'scd',
+        'stageCode',
+        'groupCode',
+      ]);
       final key = '$ccd|$scd';
       if (!seen.add(key)) {
         continue;
@@ -1393,16 +1494,20 @@ class LiveScoreService {
       options.add(
         LeagueOption(
           category: category,
-          title: _readString(
-            stage,
-            const ['CompN', 'Snm', 'competitionName', 'name'],
-            fallback: ccd,
-          ),
-          subtitle: _readString(
-            stage,
-            const ['CompD', 'CompST', 'Cnm', 'Csnm', 'country', 'region'],
-            fallback: category.toUpperCase(),
-          ),
+          title: _readString(stage, const [
+            'CompN',
+            'Snm',
+            'competitionName',
+            'name',
+          ], fallback: ccd),
+          subtitle: _readString(stage, const [
+            'CompD',
+            'CompST',
+            'Cnm',
+            'Csnm',
+            'country',
+            'region',
+          ], fallback: category.toUpperCase()),
           ccd: ccd,
           scd: scd,
         ),
@@ -1461,10 +1566,7 @@ class LiveScoreService {
       _collectFallbackNewsNodes(decoded, newsNodes);
     }
 
-    final items = newsNodes
-        .map(_parseNewsItem)
-        .whereType<NewsItem>()
-        .toList();
+    final items = newsNodes.map(_parseNewsItem).whereType<NewsItem>().toList();
 
     final seen = <String>{};
     return items.where((item) => seen.add(_newsIdentity(item))).toList();
@@ -1525,39 +1627,31 @@ class LiveScoreService {
   }
 
   bool _looksLikeSearchNode(Map<String, dynamic> node) {
-    final title = _readString(
-      node,
-      const [
-        'Nm',
-        'Snm',
-        'CompN',
-        'name',
-        'title',
-        'searchValue',
-        'teamName',
-        'leagueName',
-      ],
-    );
-    final eid = _readString(
-      node,
-      const ['Eid', 'eid', 'eventId', 'matchId'],
-    );
-    final ccd = _readString(
-      node,
-      const ['Ccd', 'ccd', 'CompCcd', 'countryCode'],
-    );
-    final scd = _readString(
-      node,
-      const ['Scd', 'scd', 'stageCode', 'leagueCode'],
-    );
-    final teamA = _readString(
-      node,
-      const ['T1.0.Nm', 'homeTeam', 'home_name'],
-    );
-    final teamB = _readString(
-      node,
-      const ['T2.0.Nm', 'awayTeam', 'away_name'],
-    );
+    final title = _readString(node, const [
+      'Nm',
+      'Snm',
+      'CompN',
+      'name',
+      'title',
+      'searchValue',
+      'teamName',
+      'leagueName',
+    ]);
+    final eid = _readString(node, const ['Eid', 'eid', 'eventId', 'matchId']);
+    final ccd = _readString(node, const [
+      'Ccd',
+      'ccd',
+      'CompCcd',
+      'countryCode',
+    ]);
+    final scd = _readString(node, const [
+      'Scd',
+      'scd',
+      'stageCode',
+      'leagueCode',
+    ]);
+    final teamA = _readString(node, const ['T1.0.Nm', 'homeTeam', 'home_name']);
+    final teamB = _readString(node, const ['T2.0.Nm', 'awayTeam', 'away_name']);
 
     return title.isNotEmpty ||
         eid.isNotEmpty ||
@@ -1567,31 +1661,31 @@ class LiveScoreService {
         teamB.isNotEmpty;
   }
 
-  SearchResult? _parseSearchResult(
-    Map<String, dynamic> node,
-    String category,
-  ) {
-    final eid = _readString(
-      node,
-      const ['Eid', 'eid', 'eventId', 'matchId'],
-    );
-    final ccd = _readString(
-      node,
-      const ['Ccd', 'ccd', 'CompCcd', 'countryCode'],
-    );
-    final scd = _readString(
-      node,
-      const ['Scd', 'scd', 'stageCode', 'leagueCode'],
-    );
+  SearchResult? _parseSearchResult(Map<String, dynamic> node, String category) {
+    final eid = _readString(node, const ['Eid', 'eid', 'eventId', 'matchId']);
+    final ccd = _readString(node, const [
+      'Ccd',
+      'ccd',
+      'CompCcd',
+      'countryCode',
+    ]);
+    final scd = _readString(node, const [
+      'Scd',
+      'scd',
+      'stageCode',
+      'leagueCode',
+    ]);
 
-    final homeTeam = _readString(
-      node,
-      const ['T1.0.Nm', 'homeTeam', 'home_name'],
-    );
-    final awayTeam = _readString(
-      node,
-      const ['T2.0.Nm', 'awayTeam', 'away_name'],
-    );
+    final homeTeam = _readString(node, const [
+      'T1.0.Nm',
+      'homeTeam',
+      'home_name',
+    ]);
+    final awayTeam = _readString(node, const [
+      'T2.0.Nm',
+      'awayTeam',
+      'away_name',
+    ]);
 
     final title = _readString(
       node,
@@ -1614,33 +1708,31 @@ class LiveScoreService {
       return null;
     }
 
-    final subtitle = _readString(
-      node,
-      const [
-        'CompD',
-        'CompST',
-        'Cnm',
-        'Csnm',
-        'country',
-        'region',
-        'subtitle',
-        'description',
-      ],
-      fallback: category.toUpperCase(),
-    );
+    final subtitle = _readString(node, const [
+      'CompD',
+      'CompST',
+      'Cnm',
+      'Csnm',
+      'country',
+      'region',
+      'subtitle',
+      'description',
+    ], fallback: category.toUpperCase());
 
-    final explicitType = _readString(
-      node,
-      const ['Type', 'type', 'entityType', 'searchType'],
-    ).toLowerCase();
+    final explicitType = _readString(node, const [
+      'Type',
+      'type',
+      'entityType',
+      'searchType',
+    ]).toLowerCase();
 
     final type = explicitType.isNotEmpty
         ? explicitType
         : eid.isNotEmpty
-            ? 'match'
-            : ccd.isNotEmpty
-                ? 'league'
-                : 'item';
+        ? 'match'
+        : ccd.isNotEmpty
+        ? 'league'
+        : 'item';
 
     return SearchResult(
       category: category,
@@ -1650,25 +1742,33 @@ class LiveScoreService {
       eid: eid,
       ccd: ccd,
       scd: scd,
-      imageUrl: _readString(
-        node,
-        const ['Img', 'img', 'image', 'logo', 'badge'],
-      ),
+      imageUrl: _readString(node, const [
+        'Img',
+        'img',
+        'image',
+        'logo',
+        'badge',
+      ]),
       homeTeam: homeTeam,
       awayTeam: awayTeam,
-      homeScore: _readString(
-        node,
-        const ['Tr1', 'Tr1OR', 'homeScore', 'home_score'],
-      ),
-      awayScore: _readString(
-        node,
-        const ['Tr2', 'Tr2OR', 'awayScore', 'away_score'],
-      ),
-      status: _readString(
-        node,
-        const ['Eps', 'EpsL', 'status', 'statusText'],
-        fallback: 'Scheduled',
-      ),
+      homeScore: _readString(node, const [
+        'Tr1',
+        'Tr1OR',
+        'homeScore',
+        'home_score',
+      ]),
+      awayScore: _readString(node, const [
+        'Tr2',
+        'Tr2OR',
+        'awayScore',
+        'away_score',
+      ]),
+      status: _readString(node, const [
+        'Eps',
+        'EpsL',
+        'status',
+        'statusText',
+      ], fallback: 'Scheduled'),
       startTime: _parseEsd(_readPath(node, 'Esd')),
     );
   }
@@ -1708,37 +1808,31 @@ class LiveScoreService {
   }
 
   bool _looksLikeFallbackNewsNode(Map<String, dynamic> node) {
-    final title = _readString(
-      node,
-      const [
-        'title',
-        'headline',
-        'articleTitle',
-        'shortTitle',
-        'tn',
-        'hdln',
-        'nm',
-        'snm',
-      ],
-    );
-    final image = _readString(
-      node,
-      const [
-        'mainMedia.gallery.url',
-        'mainMedia.thumbnail.url',
-        'image',
-        'imageUrl',
-        'img',
-        'thumbnail',
-        'thumb',
-        'heroImage',
-        'mainMedia.0.url',
-        'media.0.url',
-        'mi.0.url',
-        'imt',
-        'uri',
-      ],
-    );
+    final title = _readString(node, const [
+      'title',
+      'headline',
+      'articleTitle',
+      'shortTitle',
+      'tn',
+      'hdln',
+      'nm',
+      'snm',
+    ]);
+    final image = _readString(node, const [
+      'mainMedia.gallery.url',
+      'mainMedia.thumbnail.url',
+      'image',
+      'imageUrl',
+      'img',
+      'thumbnail',
+      'thumb',
+      'heroImage',
+      'mainMedia.0.url',
+      'media.0.url',
+      'mi.0.url',
+      'imt',
+      'uri',
+    ]);
 
     return title.isNotEmpty || image.isNotEmpty;
   }
@@ -1754,21 +1848,26 @@ class LiveScoreService {
       return const [];
     }
 
-    final competition = _readString(
-      stage,
-      const ['CompN', 'Snm', 'competitionName', 'name'],
-      fallback: 'Competition',
-    );
-    final country = _readString(
-      stage,
-      const ['CompD', 'CompST', 'Cnm', 'Csnm', 'country', 'region'],
-      fallback: 'International',
-    );
-    final countryCode = _readString(
-      stage,
-      const ['Ccd', 'ccd', 'CompCcd', 'countryCode'],
-      fallback: '',
-    );
+    final competition = _readString(stage, const [
+      'CompN',
+      'Snm',
+      'competitionName',
+      'name',
+    ], fallback: 'Competition');
+    final country = _readString(stage, const [
+      'CompD',
+      'CompST',
+      'Cnm',
+      'Csnm',
+      'country',
+      'region',
+    ], fallback: 'International');
+    final countryCode = _readString(stage, const [
+      'Ccd',
+      'ccd',
+      'CompCcd',
+      'countryCode',
+    ], fallback: '');
 
     final events = stage['Events'] ?? stage['events'];
     if (events is! List<dynamic>) {
@@ -1776,80 +1875,102 @@ class LiveScoreService {
     }
 
     return events
-        .map((dynamic event) => _parseEvent(event, competition, country, countryCode))
+        .map(
+          (dynamic event) =>
+              _parseEvent(event, competition, country, countryCode),
+        )
         .whereType<MatchItem>()
         .toList();
   }
 
-  MatchItem? _parseEvent(dynamic event, String competition, String country, String countryCode) {
+  MatchItem? _parseEvent(
+    dynamic event,
+    String competition,
+    String country,
+    String countryCode,
+  ) {
     if (event is! Map<String, dynamic>) {
       return null;
     }
 
     // Extract eid with multiple fallback keys
-    final eid = _readString(
-      event,
-      const [
-        'Eid',           // Primary key from list endpoints
-        'eid',           // Lowercase variant
-        'ID',            // Alternative uppercase
-        'Id',            // Mixed case
-        'eventId',       // Alternative name
-        'event_id',      // Snake case
-        'matchId',       // Alternative name
-        'match_id',      // Snake case
-        'E_Id',          // Underscore variant
-      ],
-    );
+    final eid = _readString(event, const [
+      'Eid', // Primary key from list endpoints
+      'eid', // Lowercase variant
+      'ID', // Alternative uppercase
+      'Id', // Mixed case
+      'eventId', // Alternative name
+      'event_id', // Snake case
+      'matchId', // Alternative name
+      'match_id', // Snake case
+      'E_Id', // Underscore variant
+    ]);
     if (eid.isEmpty) {
-      print('DEBUG: Failed to extract EID from event. Available keys: ${event.keys.toList()}');
+      print(
+        'DEBUG: Failed to extract EID from event. Available keys: ${event.keys.toList()}',
+      );
       return null;
     }
-    print('DEBUG: Extracted EID = $eid from list endpoint. Available keys: ${event.keys.take(10).toList()}');
-
-    final homeTeam = _readString(
-      event,
-      const ['T1.0.Nm', 'T1.0.name', 'homeTeam', 'home_name'],
-      fallback: 'Home',
-    );
-    final homeTeamId = _readString(
-      event,
-      const ['T1.0.ID', 'T1.0.id', 'homeTeamId', 'home_team_id'],
-    );
-    final awayTeam = _readString(
-      event,
-      const ['T2.0.Nm', 'T2.0.name', 'awayTeam', 'away_name'],
-      fallback: 'Away',
-    );
-    final awayTeamId = _readString(
-      event,
-      const ['T2.0.ID', 'T2.0.id', 'awayTeamId', 'away_team_id'],
-    );
-    final homeTeamImage = _readString(
-      event,
-      const ['T1.0.Img', 'T1.0.image', 'homeTeamImage', 'home_image'],
-    );
-    final awayTeamImage = _readString(
-      event,
-      const ['T2.0.Img', 'T2.0.image', 'awayTeamImage', 'away_image'],
+    print(
+      'DEBUG: Extracted EID = $eid from list endpoint. Available keys: ${event.keys.take(10).toList()}',
     );
 
-    final homeScore = _readString(
-      event,
-      const ['Tr1', 'Tr1OR', 'homeScore', 'home_score'],
-      fallback: '',
-    );
-    final awayScore = _readString(
-      event,
-      const ['Tr2', 'Tr2OR', 'awayScore', 'away_score'],
-      fallback: '',
-    );
+    final homeTeam = _readString(event, const [
+      'T1.0.Nm',
+      'T1.0.name',
+      'homeTeam',
+      'home_name',
+    ], fallback: 'Home');
+    final homeTeamId = _readString(event, const [
+      'T1.0.ID',
+      'T1.0.id',
+      'homeTeamId',
+      'home_team_id',
+    ]);
+    final awayTeam = _readString(event, const [
+      'T2.0.Nm',
+      'T2.0.name',
+      'awayTeam',
+      'away_name',
+    ], fallback: 'Away');
+    final awayTeamId = _readString(event, const [
+      'T2.0.ID',
+      'T2.0.id',
+      'awayTeamId',
+      'away_team_id',
+    ]);
+    final homeTeamImage = _readString(event, const [
+      'T1.0.Img',
+      'T1.0.image',
+      'homeTeamImage',
+      'home_image',
+    ]);
+    final awayTeamImage = _readString(event, const [
+      'T2.0.Img',
+      'T2.0.image',
+      'awayTeamImage',
+      'away_image',
+    ]);
 
-    final status = _readString(
-      event,
-      const ['Eps', 'EpsL', 'status', 'statusText'],
-      fallback: 'Scheduled',
-    );
+    final homeScore = _readString(event, const [
+      'Tr1',
+      'Tr1OR',
+      'homeScore',
+      'home_score',
+    ], fallback: '');
+    final awayScore = _readString(event, const [
+      'Tr2',
+      'Tr2OR',
+      'awayScore',
+      'away_score',
+    ], fallback: '');
+
+    final status = _readString(event, const [
+      'Eps',
+      'EpsL',
+      'status',
+      'statusText',
+    ], fallback: 'Scheduled');
 
     return MatchItem(
       eid: eid,
@@ -1870,31 +1991,25 @@ class LiveScoreService {
   }
 
   NewsItem? _parseNewsItem(Map<String, dynamic> raw) {
-    final id = _readString(
-      raw,
-      const [
-        'id',
-        'ID',
-        'articleId',
-        'articleID',
-        'newsId',
-        'nid',
-      ],
-    );
-    final headline = _readString(
-      raw,
-      const [
-        'title',
-        'headline',
-        'articleTitle',
-        'shortTitle',
-        'seo.title',
-        'tn',
-        'hdln',
-        'nm',
-        'snm',
-      ],
-    );
+    final id = _readString(raw, const [
+      'id',
+      'ID',
+      'articleId',
+      'articleID',
+      'newsId',
+      'nid',
+    ]);
+    final headline = _readString(raw, const [
+      'title',
+      'headline',
+      'articleTitle',
+      'shortTitle',
+      'seo.title',
+      'tn',
+      'hdln',
+      'nm',
+      'snm',
+    ]);
     if (headline.isEmpty) {
       return null;
     }
@@ -1902,81 +2017,64 @@ class LiveScoreService {
     return NewsItem(
       id: id,
       headline: headline,
-      summary: _readString(
-        raw,
-        const [
-          'subTitle',
-          'subtitle',
-          'summary',
-          'description',
-          'seo.description',
-          'excerpt',
-          'smry',
-          'desc',
-          'teaser',
-        ],
-      ),
+      summary: _readString(raw, const [
+        'subTitle',
+        'subtitle',
+        'summary',
+        'description',
+        'seo.description',
+        'excerpt',
+        'smry',
+        'desc',
+        'teaser',
+      ]),
       imageUrl: _normalizeNewsImageUrl(
-        _readString(
-          raw,
-          const [
-            'mainMedia.gallery.url',
-            'mainMedia.thumbnail.url',
-            'image',
-            'imageUrl',
-            'img',
-            'thumbnail',
-            'thumb',
-            'heroImage',
-            'mainMedia.0.url',
-            'media.0.url',
-            'mi.0.url',
-            'imt',
-          ],
-        ),
+        _readString(raw, const [
+          'mainMedia.gallery.url',
+          'mainMedia.thumbnail.url',
+          'image',
+          'imageUrl',
+          'img',
+          'thumbnail',
+          'thumb',
+          'heroImage',
+          'mainMedia.0.url',
+          'media.0.url',
+          'mi.0.url',
+          'imt',
+        ]),
       ),
-      source: _readString(
-        raw,
-        const [
-          'publishedBy.name',
-          'source',
-          'provider',
-          'publisher',
-          'origin',
-          'src',
-          'prv',
-        ],
-        fallback: 'LiveScore',
-      ),
-      publishedAt: _readString(
-        raw,
-        const [
-          'publishedAt',
-          'updatedAtUtc',
-          'publishedDate',
-          'publishDate',
-          'date',
-          'lastUpdated',
-          'dt',
-          'ut',
-        ],
-      ),
-      category: _readString(
-        raw,
-        const [
-          'categoryLabel',
-          'category.initialTitle',
-          'category.title',
-          'category',
-          'tag',
-          'section',
-          'sport',
-          'type',
-          'snm',
-          'nm',
-        ],
-        fallback: 'NEWS',
-      ),
+      source: _readString(raw, const [
+        'publishedBy.name',
+        'source',
+        'provider',
+        'publisher',
+        'origin',
+        'src',
+        'prv',
+      ], fallback: 'LiveScore'),
+      publishedAt: _readString(raw, const [
+        'publishedAt',
+        'updatedAtUtc',
+        'publishedDate',
+        'publishDate',
+        'date',
+        'lastUpdated',
+        'dt',
+        'ut',
+      ]),
+      category: _readString(raw, const [
+        'categoryLabel',
+        'category.initialTitle',
+        'category.title',
+        'category',
+        'tag',
+        'section',
+        'sport',
+        'type',
+        'snm',
+        'nm',
+      ], fallback: 'NEWS'),
     );
   }
 
@@ -2004,127 +2102,102 @@ class LiveScoreService {
     }
 
     final source = bestNode ?? <String, dynamic>{};
-    final headline = _readString(
-      source,
-      const [
-        'title',
-        'headline',
-        'articleTitle',
-        'shortTitle',
-        'seo.title',
-        'tn',
-        'hdln',
-        'nm',
-        'snm',
-      ],
-      fallback: fallback?.headline ?? '',
-    );
+    final headline = _readString(source, const [
+      'title',
+      'headline',
+      'articleTitle',
+      'shortTitle',
+      'seo.title',
+      'tn',
+      'hdln',
+      'nm',
+      'snm',
+    ], fallback: fallback?.headline ?? '');
 
-    final summary = _readString(
-      source,
-      const [
-        'subTitle',
-        'subtitle',
-        'summary',
-        'description',
-        'seo.description',
-        'excerpt',
-        'smry',
-        'desc',
-        'teaser',
-      ],
-      fallback: fallback?.summary ?? '',
-    );
+    final summary = _readString(source, const [
+      'subTitle',
+      'subtitle',
+      'summary',
+      'description',
+      'seo.description',
+      'excerpt',
+      'smry',
+      'desc',
+      'teaser',
+    ], fallback: fallback?.summary ?? '');
 
     final content = _normalizeNewsContent(
-      _readString(
-        source,
-        const [
-          'content',
-          'body',
-          'articleBody',
-          'story.body',
-          'story.content',
-          'details',
-          'text',
-          'html',
-          'contentHtml',
-          'contentText',
-          'article.content',
-          'article.body',
-        ],
-      ),
+      _readString(source, const [
+        'content',
+        'body',
+        'articleBody',
+        'story.body',
+        'story.content',
+        'details',
+        'text',
+        'html',
+        'contentHtml',
+        'contentText',
+        'article.content',
+        'article.body',
+      ]),
       fallback: summary.isNotEmpty ? summary : (fallback?.content ?? ''),
     );
 
     return NewsDetail(
       id: id,
-      headline: headline.isNotEmpty ? headline : (fallback?.headline ?? 'News Detail'),
+      headline: headline.isNotEmpty
+          ? headline
+          : (fallback?.headline ?? 'News Detail'),
       summary: summary.isNotEmpty ? summary : (fallback?.summary ?? ''),
       content: content,
       imageUrl: _normalizeNewsImageUrl(
-        _readString(
-          source,
-          const [
-            'mainMedia.gallery.url',
-            'mainMedia.thumbnail.url',
-            'image',
-            'imageUrl',
-            'img',
-            'thumbnail',
-            'thumb',
-            'heroImage',
-            'mainMedia.0.url',
-            'media.0.url',
-            'mi.0.url',
-            'imt',
-          ],
-          fallback: fallback?.imageUrl ?? '',
-        ),
+        _readString(source, const [
+          'mainMedia.gallery.url',
+          'mainMedia.thumbnail.url',
+          'image',
+          'imageUrl',
+          'img',
+          'thumbnail',
+          'thumb',
+          'heroImage',
+          'mainMedia.0.url',
+          'media.0.url',
+          'mi.0.url',
+          'imt',
+        ], fallback: fallback?.imageUrl ?? ''),
       ),
-      source: _readString(
-        source,
-        const [
-          'publishedBy.name',
-          'source',
-          'provider',
-          'publisher',
-          'origin',
-          'src',
-          'prv',
-        ],
-        fallback: fallback?.source ?? 'LiveScore',
-      ),
-      publishedAt: _readString(
-        source,
-        const [
-          'publishedAt',
-          'updatedAtUtc',
-          'publishedDate',
-          'publishDate',
-          'date',
-          'lastUpdated',
-          'dt',
-          'ut',
-        ],
-        fallback: fallback?.publishedAt ?? '',
-      ),
-      category: _readString(
-        source,
-        const [
-          'categoryLabel',
-          'category.initialTitle',
-          'category.title',
-          'category',
-          'tag',
-          'section',
-          'sport',
-          'type',
-          'snm',
-          'nm',
-        ],
-        fallback: fallback?.category ?? 'NEWS',
-      ),
+      source: _readString(source, const [
+        'publishedBy.name',
+        'source',
+        'provider',
+        'publisher',
+        'origin',
+        'src',
+        'prv',
+      ], fallback: fallback?.source ?? 'LiveScore'),
+      publishedAt: _readString(source, const [
+        'publishedAt',
+        'updatedAtUtc',
+        'publishedDate',
+        'publishDate',
+        'date',
+        'lastUpdated',
+        'dt',
+        'ut',
+      ], fallback: fallback?.publishedAt ?? ''),
+      category: _readString(source, const [
+        'categoryLabel',
+        'category.initialTitle',
+        'category.title',
+        'category',
+        'tag',
+        'section',
+        'sport',
+        'type',
+        'snm',
+        'nm',
+      ], fallback: fallback?.category ?? 'NEWS'),
     );
   }
 
@@ -2147,16 +2220,32 @@ class LiveScoreService {
   int _scoreNewsDetailNode(Map<String, dynamic> node) {
     var score = 0;
 
-    if (_readString(node, const ['content', 'body', 'articleBody']).isNotEmpty) {
+    if (_readString(node, const [
+      'content',
+      'body',
+      'articleBody',
+    ]).isNotEmpty) {
       score += 4;
     }
-    if (_readString(node, const ['title', 'headline', 'articleTitle']).isNotEmpty) {
+    if (_readString(node, const [
+      'title',
+      'headline',
+      'articleTitle',
+    ]).isNotEmpty) {
       score += 3;
     }
-    if (_readString(node, const ['description', 'summary', 'subtitle']).isNotEmpty) {
+    if (_readString(node, const [
+      'description',
+      'summary',
+      'subtitle',
+    ]).isNotEmpty) {
       score += 2;
     }
-    if (_readString(node, const ['mainMedia.gallery.url', 'image', 'imageUrl']).isNotEmpty) {
+    if (_readString(node, const [
+      'mainMedia.gallery.url',
+      'image',
+      'imageUrl',
+    ]).isNotEmpty) {
       score += 1;
     }
 
@@ -2221,12 +2310,13 @@ class LiveScoreService {
     final sourceUrl = normalized.startsWith('http')
         ? normalized
         : normalized.startsWith('/')
-            ? 'https://storage.livescore.com$normalized'
-            : normalized.contains('/')
-                ? 'https://storage.livescore.com/$normalized'
-                : 'https://storage.livescore.com/images/news/$normalized';
+        ? 'https://storage.livescore.com$normalized'
+        : normalized.contains('/')
+        ? 'https://storage.livescore.com/$normalized'
+        : 'https://storage.livescore.com/images/news/$normalized';
 
-    return 'https://getimage.membertsd.workers.dev/?url=' + Uri.encodeComponent(sourceUrl);
+    return 'https://getimage.membertsd.workers.dev/?url=' +
+        Uri.encodeComponent(sourceUrl);
   }
 
   String _normalizeNewsContent(String value, {String fallback = ''}) {
@@ -2278,9 +2368,3 @@ class LiveScoreService {
     return current;
   }
 }
-
-
-
-
-
-
