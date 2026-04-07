@@ -61,26 +61,26 @@ class _LeagueListPageState extends State<LeagueListPage> {
           future: _leaguesFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return GridView.count(
-                crossAxisCount: 2,
-                padding: const EdgeInsets.all(12),
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
-                childAspectRatio: 0.95,
-                children: List.generate(
-                  6,
-                  (index) => Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF151515),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: Colors.yellow.shade600,
-                      ),
-                    ),
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 24),
+                children: [
+                  _buildLeagueHero(),
+                  const SizedBox(height: 10),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 14,
+                          crossAxisSpacing: 14,
+                          childAspectRatio: 1.08,
+                        ),
+                    itemCount: 6,
+                    itemBuilder: (_, __) => _buildLeagueSkeletonCard(),
                   ),
-                ),
+                ],
               );
             }
 
@@ -118,15 +118,24 @@ class _LeagueListPageState extends State<LeagueListPage> {
               physics: const AlwaysScrollableScrollPhysics(),
               child: Column(
                 children: [
-                  GridView.count(
-                    crossAxisCount: 2,
-                    padding: const EdgeInsets.all(12),
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
-                    childAspectRatio: 0.95,
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+                    child: _buildLeagueHero(),
+                  ),
+                  GridView.builder(
+                    padding: const EdgeInsets.all(14),
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    children: visibleLeagues.map((league) => _buildLeagueCard(league)).toList(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 14,
+                          crossAxisSpacing: 14,
+                          childAspectRatio: 1.08,
+                        ),
+                    itemCount: visibleLeagues.length,
+                    itemBuilder: (context, index) =>
+                        _buildLeagueCard(visibleLeagues[index]),
                   ),
                   if (hasMoreLeagues) _buildShowMoreButton(leagues.length),
                 ],
@@ -138,83 +147,234 @@ class _LeagueListPageState extends State<LeagueListPage> {
     );
   }
 
+  Widget _buildLeagueHero() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(9),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF181818), Color(0xFF221C08)],
+        ),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              'SOCCER',
+              style: TextStyle(
+                color: Colors.yellow.shade600,
+                fontSize: 8,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+          const SizedBox(height: 5),
+          const Text(
+            'Browse Leagues',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Find competitions faster with clearer cards, stronger labels, and a cleaner league grid.',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.72),
+              fontSize: 9,
+              height: 1.35,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLeagueCard(LeagueOption league) {
     return InkWell(
       onTap: () {
         Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => LeagueMatchesPage(league: league),
-          ),
+          MaterialPageRoute(builder: (_) => LeagueMatchesPage(league: league)),
         );
       },
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(15),
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(15),
           border: Border.all(color: Colors.white.withOpacity(0.08)),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Colors.white.withOpacity(0.02),
-              Colors.white.withOpacity(0.01),
+              const Color(0xFF151515),
+              Colors.yellow.shade600.withOpacity(0.05),
             ],
           ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.yellow.shade600, width: 1),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Image.network(
-                'https://getimage.membertsd.workers.dev/?url=https://storage.livescore.com/images/flag/${league.ccd}.jpg',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.yellow.shade600.withOpacity(0.2),
-                    child: const Icon(
-                      Icons.emoji_events_outlined,
-                      color: Color(0xFFE3C75F),
-                      size: 16,
-                    ),
-                  );
-                },
-              ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.18),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
             ),
-            const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.yellow.shade600.withOpacity(0.9),
+                        width: 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.yellow.shade600.withOpacity(0.18),
+                          blurRadius: 10,
+                        ),
+                      ],
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Image.network(
+                      'https://getimage.membertsd.workers.dev/?url=https://storage.livescore.com/images/flag/${league.ccd}.jpg',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.yellow.shade600.withOpacity(0.2),
+                          child: const Icon(
+                            Icons.emoji_events_outlined,
+                            color: Color(0xFFE3C75F),
+                            size: 12,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    width: 18,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: Colors.white.withOpacity(0.06)),
+                    ),
+                    child: Icon(
+                      Icons.arrow_outward_rounded,
+                      color: Colors.yellow.shade600,
+                      size: 10,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              Text(
                 league.title,
                 maxLines: 2,
-                textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  height: 1.1,
+                  fontWeight: FontWeight.w800,
+                  height: 1.12,
                 ),
               ),
-            ),
-            const SizedBox(height: 2),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
+              const SizedBox(height: 2),
+              Text(
                 league.subtitle,
                 maxLines: 1,
-                textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white70,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.68),
                   fontSize: 8,
+                  fontWeight: FontWeight.w500,
                 ),
+              ),
+              const SizedBox(height: 6),
+              Container(
+                width: double.infinity,
+                height: 4,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(999),
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.yellow.shade600,
+                      Colors.yellow.shade600.withOpacity(0.18),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLeagueSkeletonCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF151515),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 26,
+              height: 26,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+            ),
+            const Spacer(),
+            Container(
+              width: double.infinity,
+              height: 8,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              width: 70,
+              height: 6,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(999),
               ),
             ),
           ],
@@ -256,10 +416,7 @@ class _LeagueListPageState extends State<LeagueListPage> {
     );
   }
 
-  Widget _buildMessageCard({
-    required String title,
-    required String subtitle,
-  }) {
+  Widget _buildMessageCard({required String title, required String subtitle}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),

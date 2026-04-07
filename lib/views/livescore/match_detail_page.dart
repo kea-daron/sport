@@ -204,8 +204,6 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       'SUMMARY',
       'LINEUPS',
       'STATISTICS',
-      'PLAYERS',
-      'TEAM STATS',
       'TABLE',
       'H2H',
     ];
@@ -277,12 +275,8 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       case 3:
         return _buildStatisticsTab();
       case 4:
-        return _buildPlayerStatsTab();
-      case 5:
-        return _buildTeamStatsTab();
-      case 6:
         return _buildTableTab();
-      case 7:
+      case 5:
         return _buildH2HTab();
       default:
         return _buildOverviewTab(detail);
@@ -2344,7 +2338,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF171717),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFF3F4F6)),
         boxShadow: [
@@ -2363,14 +2357,14 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
             child: Text(
               'Match Statistics',
               style: TextStyle(
-                color: Color(0xFF2F2151),
+                color: Colors.white,
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 1.0,
               ),
             ),
           ),
-          const Divider(color: Color(0xFFF3F4F6), height: 1),
+          Divider(color: Colors.white.withOpacity(0.08), height: 1),
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -2407,7 +2401,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
               child: Text(
                 _formatStatDisplayValue(homeText),
                 style: const TextStyle(
-                  color: Color(0xFF374151),
+                  color: Colors.white,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -2418,7 +2412,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                 label,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  color: Color(0xFF9CA3AF),
+                  color: Colors.white70,
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.5,
@@ -2430,7 +2424,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                 _formatStatDisplayValue(awayText),
                 textAlign: TextAlign.right,
                 style: const TextStyle(
-                  color: Color(0xFF374151),
+                  color: Colors.white,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -3548,7 +3542,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF171717),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFF0F0F0)),
         boxShadow: [
@@ -3571,7 +3565,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                       const Icon(
                         Icons.emoji_events_outlined,
                         size: 12,
-                        color: Color(0xFF9CA3AF),
+                        color: Colors.white70,
                       ),
                       const SizedBox(width: 4),
                       Expanded(
@@ -3580,7 +3574,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            color: Color(0xFF9CA3AF),
+                            color: Colors.white70,
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.5,
@@ -3596,13 +3590,13 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                     const Icon(
                       Icons.calendar_today_outlined,
                       size: 11,
-                      color: Color(0xFF9CA3AF),
+                      color: Colors.white70,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       formattedDate,
                       style: const TextStyle(
-                        color: Color(0xFF9CA3AF),
+                        color: Colors.white70,
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.4,
@@ -3615,7 +3609,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
             Container(
               margin: const EdgeInsets.symmetric(vertical: 10),
               height: 1,
-              color: const Color(0xFFF3F4F6),
+              color: Colors.white.withOpacity(0.08),
             ),
             Row(
               children: [
@@ -3658,7 +3652,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                         child: Text(
                           '-',
                           style: TextStyle(
-                            color: Colors.grey.shade400,
+                            color: Colors.white38,
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
                           ),
@@ -3739,23 +3733,19 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       height: 32,
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF232323),
         shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFF3F4F6)),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),
       child: imageUrl == null
-          ? const Icon(
-              Icons.shield_outlined,
-              size: 16,
-              color: Color(0xFF9CA3AF),
-            )
+          ? const Icon(Icons.shield_outlined, size: 16, color: Colors.white70)
           : Image.network(
               imageUrl,
               fit: BoxFit.contain,
               errorBuilder: (_, __, ___) => const Icon(
                 Icons.shield_outlined,
                 size: 16,
-                color: Color(0xFF9CA3AF),
+                color: Colors.white70,
               ),
             ),
     );
@@ -3815,9 +3805,9 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     final current = int.tryParse(score) ?? 0;
     final other = int.tryParse(opponentScore) ?? 0;
     if (current > other && emphasis) {
-      return Colors.black;
+      return Colors.white;
     }
-    return const Color(0xFF6B7280);
+    return Colors.white70;
   }
 
   String _formatH2HDate(String raw) {

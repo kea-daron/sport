@@ -18,13 +18,31 @@ class _LiveScorePageState extends State<LiveScorePage> {
   static const int _matchesPageSize = 5;
 
   static const List<_SportOption> _sports = [
-    _SportOption(label: 'Football', apiValue: 'soccer', icon: Icons.sports_soccer),
+    _SportOption(
+      label: 'Football',
+      apiValue: 'soccer',
+      icon: Icons.sports_soccer,
+    ),
+    _SportOption(
+      label: 'Cricket',
+      apiValue: 'cricket',
+      icon: Icons.sports_cricket,
+    ),
     _SportOption(
       label: 'Basketball',
       apiValue: 'basketball',
       icon: Icons.sports_basketball,
     ),
-    _SportOption(label: 'Tennis', apiValue: 'tennis', icon: Icons.sports_tennis),
+    _SportOption(
+      label: 'Tennis',
+      apiValue: 'tennis',
+      icon: Icons.sports_tennis,
+    ),
+    _SportOption(
+      label: 'Hockey',
+      apiValue: 'hockey',
+      icon: Icons.sports_hockey,
+    ),
   ];
 
   late _SportOption _selectedSport;
@@ -76,7 +94,6 @@ class _LiveScorePageState extends State<LiveScorePage> {
       _visibleMatchesCount = _initialMatchesCount;
     });
   }
-
 
   void _changeDate(DateTime date) {
     final normalized = _stripTime(date);
@@ -134,10 +151,8 @@ class _LiveScorePageState extends State<LiveScorePage> {
   void _navigateToMatchDetail(MatchItem match) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => MatchDetailPage(
-          match: match,
-          category: _selectedSport.apiValue,
-        ),
+        builder: (_) =>
+            MatchDetailPage(match: match, category: _selectedSport.apiValue),
       ),
     );
   }
@@ -201,9 +216,11 @@ class _LiveScorePageState extends State<LiveScorePage> {
 
                 final groupedMatches = _groupMatchesByCompetition(matches);
                 final allCompetitions = groupedMatches.keys.toList();
-                final visibleCompetitions =
-                    allCompetitions.take(_visibleMatchesCount).toList();
-                final hasMoreMatches = allCompetitions.length > visibleCompetitions.length;
+                final visibleCompetitions = allCompetitions
+                    .take(_visibleMatchesCount)
+                    .toList();
+                final hasMoreMatches =
+                    allCompetitions.length > visibleCompetitions.length;
 
                 return Column(
                   children: [
@@ -213,7 +230,8 @@ class _LiveScorePageState extends State<LiveScorePage> {
                         matches: groupedMatches[competition]!,
                       ),
                     ),
-                    if (hasMoreMatches) _buildShowMoreButton(allCompetitions.length),
+                    if (hasMoreMatches)
+                      _buildShowMoreButton(allCompetitions.length),
                   ],
                 );
               },
@@ -227,7 +245,7 @@ class _LiveScorePageState extends State<LiveScorePage> {
 
   Widget _buildHeroHeader() {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: const LinearGradient(
@@ -241,7 +259,7 @@ class _LiveScorePageState extends State<LiveScorePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.08),
               borderRadius: BorderRadius.circular(999),
@@ -250,32 +268,32 @@ class _LiveScorePageState extends State<LiveScorePage> {
               _selectedSport.label.toUpperCase(),
               style: TextStyle(
                 color: Colors.yellow.shade600,
-                fontSize: 10,
+                fontSize: 9,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.3,
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             _isLiveMode
                 ? 'Pick a sport to track matches in real time.'
                 : 'Pick a sport and day to browse match schedules.',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 16,
+              fontSize: 14,
               fontWeight: FontWeight.w700,
               height: 1.3,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
             _isLiveMode
                 ? 'Fast filters, clean cards, and live scores powered by the same LiveScore API.'
                 : 'Switch between LIVE and specific dates without leaving this page.',
             style: TextStyle(
               color: Colors.white.withOpacity(0.7),
-              fontSize: 12,
+              fontSize: 10,
               height: 1.3,
             ),
           ),
@@ -286,7 +304,7 @@ class _LiveScorePageState extends State<LiveScorePage> {
 
   Widget _buildSportChooser() {
     return SizedBox(
-      height: 36,
+      height: 30,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: _sports.length,
@@ -299,10 +317,12 @@ class _LiveScorePageState extends State<LiveScorePage> {
             onTap: () => _changeSport(sport),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFF1E1A0E) : const Color(0xFF151515),
-                borderRadius: BorderRadius.circular(14),
+                color: isSelected
+                    ? const Color(0xFF1E1A0E)
+                    : const Color(0xFF151515),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isSelected
                       ? Colors.yellow.shade600
@@ -313,16 +333,18 @@ class _LiveScorePageState extends State<LiveScorePage> {
                 children: [
                   Icon(
                     sport.icon,
-                    size: 14,
+                    size: 12,
                     color: isSelected ? Colors.yellow.shade600 : Colors.white70,
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 5),
                   Text(
                     sport.label,
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      fontSize: 10,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
                     ),
                   ),
                 ],
@@ -348,14 +370,18 @@ class _LiveScorePageState extends State<LiveScorePage> {
               separatorBuilder: (_, __) => const SizedBox(width: 4),
               itemBuilder: (context, index) {
                 final date = dates[index];
-                final isSelected = !_isLiveMode && _isSameDate(date, _selectedDate);
+                final isSelected =
+                    !_isLiveMode && _isSameDate(date, _selectedDate);
 
                 return GestureDetector(
                   onTap: () => _changeDate(date),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
                     width: 50,
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? const Color(0xFF1B1B1B)
@@ -370,7 +396,9 @@ class _LiveScorePageState extends State<LiveScorePage> {
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 9,
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
                           ),
                         ),
                         const SizedBox(height: 1),
@@ -402,7 +430,11 @@ class _LiveScorePageState extends State<LiveScorePage> {
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: Colors.white.withOpacity(0.06)),
               ),
-              child: const Icon(Icons.calendar_month_outlined, color: Colors.white, size: 18),
+              child: const Icon(
+                Icons.calendar_month_outlined,
+                color: Colors.white,
+                size: 18,
+              ),
             ),
           ),
         ],
@@ -418,7 +450,9 @@ class _LiveScorePageState extends State<LiveScorePage> {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: _isLiveMode ? const Color(0xFF1B1B1B) : const Color(0xFF121212),
+          color: _isLiveMode
+              ? const Color(0xFF1B1B1B)
+              : const Color(0xFF121212),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: _isLiveMode
@@ -454,10 +488,7 @@ class _LiveScorePageState extends State<LiveScorePage> {
     );
   }
 
-  Widget _buildMessageCard({
-    required String title,
-    required String subtitle,
-  }) {
+  Widget _buildMessageCard({required String title, required String subtitle}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -523,7 +554,9 @@ class _LiveScorePageState extends State<LiveScorePage> {
     );
   }
 
-  Map<String, List<MatchItem>> _groupMatchesByCompetition(List<MatchItem> matches) {
+  Map<String, List<MatchItem>> _groupMatchesByCompetition(
+    List<MatchItem> matches,
+  ) {
     final grouped = <String, List<MatchItem>>{};
     for (final match in matches) {
       if (!grouped.containsKey(match.competition)) {
@@ -549,15 +582,18 @@ class _LiveScorePageState extends State<LiveScorePage> {
         children: [
           // League Header
           Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: 4),
             child: Row(
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 28,
+                  height: 28,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.yellow.shade600, width: 2),
+                    border: Border.all(
+                      color: Colors.yellow.shade600,
+                      width: 1.2,
+                    ),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Image.network(
@@ -571,7 +607,7 @@ class _LiveScorePageState extends State<LiveScorePage> {
                             _initials(competition),
                             style: TextStyle(
                               color: Colors.yellow.shade600,
-                              fontSize: 14,
+                              fontSize: 9,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -580,7 +616,7 @@ class _LiveScorePageState extends State<LiveScorePage> {
                     },
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -591,24 +627,27 @@ class _LiveScorePageState extends State<LiveScorePage> {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 14,
+                          fontSize: 10,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 1),
                       Text(
                         firstMatch.country,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white70,
-                          fontSize: 11,
+                          fontSize: 8,
                         ),
                       ),
                     ],
                   ),
                 ),
-                Icon(Icons.arrow_forward_ios, color: Colors.yellow.shade600, size: 18),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.yellow.shade600,
+                  size: 12,
+                ),
               ],
             ),
           ),
@@ -782,7 +821,8 @@ class _LiveScorePageState extends State<LiveScorePage> {
     final sourceUrl = trimmed.startsWith('http')
         ? trimmed
         : 'https://storage.livescore.com/images/team/medium/$trimmed';
-    return 'https://getimage.membertsd.workers.dev/?url=' + Uri.encodeComponent(sourceUrl);
+    return 'https://getimage.membertsd.workers.dev/?url=' +
+        Uri.encodeComponent(sourceUrl);
   }
 
   String _initials(String teamName) {
@@ -873,10 +913,7 @@ class _LiveScorePageState extends State<LiveScorePage> {
         }
       },
       items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          label: 'Home',
-        ),
+        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
         BottomNavigationBarItem(
           icon: Icon(Icons.description_outlined),
           label: 'News',
@@ -905,11 +942,3 @@ class _SportOption {
     required this.icon,
   });
 }
-
-
-
-
-
-
-
-

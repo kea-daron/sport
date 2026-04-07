@@ -24,11 +24,14 @@ class _HomePageState extends State<HomePage> {
   static const int _initialNewsCount = 5;
   static const int _newsPageSize = 5;
   static const int _matchesPerLeague = 5;
+  static const double _teamLogoScrollStep = 1.2;
 
   int _selectedIndex = 0;
   late PageController _bannerController;
+  late ScrollController _teamLogoScrollController;
   int _currentBannerIndex = 0;
   late Timer _bannerTimer;
+  Timer? _teamLogoTimer;
   late Future<List<MatchItem>> _matchesFuture;
   late Future<List<NewsItem>> _newsFuture;
   int _visibleNewsCount = _initialNewsCount;
@@ -44,7 +47,8 @@ class _HomePageState extends State<HomePage> {
       title: 'Championship Finals: The most thrilling moments',
     ),
     BannerData(
-      image: 'https://content.api.news/v3/images/bin/03d3123947edf8a43abbc6df89405722',
+      image:
+          'https://content.api.news/v3/images/bin/03d3123947edf8a43abbc6df89405722',
       title: 'Top performers shine in league-wide victories',
     ),
   ];
@@ -53,9 +57,11 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _bannerController = PageController();
+    _teamLogoScrollController = ScrollController();
     _matchesFuture = _loadMatches();
     _newsFuture = _loadNews();
     _startBannerAnimation();
+    _startTeamLogoAnimation();
   }
 
   Future<List<MatchItem>> _loadMatches() {
@@ -65,10 +71,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
   Future<List<NewsItem>> _loadNews() {
     return _liveScoreService.fetchNews();
   }
+
   void _startBannerAnimation() {
     _bannerTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (_bannerController.hasClients) {
@@ -79,6 +85,31 @@ class _HomePageState extends State<HomePage> {
           curve: Curves.easeInOut,
         );
       }
+    });
+  }
+
+  void _startTeamLogoAnimation() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _teamLogoTimer?.cancel();
+      _teamLogoTimer = Timer.periodic(const Duration(milliseconds: 16), (_) {
+        if (!mounted || !_teamLogoScrollController.hasClients) {
+          return;
+        }
+
+        final position = _teamLogoScrollController.position;
+        if (!position.hasPixels || position.maxScrollExtent <= 0) {
+          return;
+        }
+        final nextOffset = position.pixels + _teamLogoScrollStep;
+        if (nextOffset >= position.maxScrollExtent) {
+          _teamLogoScrollController.jumpTo(0);
+        } else {
+          _teamLogoScrollController.jumpTo(nextOffset);
+        }
+      });
     });
   }
 
@@ -105,6 +136,8 @@ class _HomePageState extends State<HomePage> {
   void dispose() {
     _bannerTimer.cancel();
     _bannerController.dispose();
+    _teamLogoTimer?.cancel();
+    _teamLogoScrollController.dispose();
     super.dispose();
   }
 
@@ -140,130 +173,128 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildFeaturedSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Stack(
       children: [
-        SizedBox(
-          height: 240,
-          child: PageView.builder(
-            controller: _bannerController,
-            onPageChanged: (index) {
-              setState(() {
-                _currentBannerIndex = index;
-              });
-            },
-            itemCount: bannerList.length,
-            itemBuilder: (context, index) {
-              return Stack(
-                children: [
-                  Positioned.fill(
-                    child: Image.network(
-                      bannerList[index].image,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return _buildImageFallback();
-                      },
-                    ),
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: 240,
+              child: PageView.builder(
+                controller: _bannerController,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentBannerIndex = index;
+                  });
+                },
+                itemCount: bannerList.length,
+                itemBuilder: (context, index) {
+                  return Stack(
+                    children: [
+                      Positioned.fill(
+                        child: Image.network(
+                          bannerList[index].image,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildImageFallback();
+                          },
+                        ),
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.8),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'FEATURED',
+                                  style: TextStyle(
+                                    color: Colors.yellow,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  bannerList[index].title,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 16,
-                    right: 16,
-                    child: Row(
-                      children: [
-                        _buildTopIcon(
-                          Icons.format_list_bulleted_rounded,
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const LeagueListPage(),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 12),
-                        _buildTopIcon(
-                          Icons.search,
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const SearchPage(),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(width: 12),
-                        _buildTopIcon(Icons.notifications_outlined),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'FEATURED',
-                              style: TextStyle(
-                                color: Colors.yellow,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              bannerList[index].title,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                height: 1.3,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                     ],
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+            Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  bannerList.length,
+                  (index) => Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: index == _currentBannerIndex ? 24 : 8,
+                    height: 3,
+                    decoration: BoxDecoration(
+                      color: index == _currentBannerIndex
+                          ? Colors.yellow.shade600
+                          : Colors.white30,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                ],
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 12),
-        Center(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              bannerList.length,
-              (index) => Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: index == _currentBannerIndex ? 24 : 8,
-                height: 3,
-                decoration: BoxDecoration(
-                  color: index == _currentBannerIndex
-                      ? Colors.yellow.shade600
-                      : Colors.white30,
-                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
+          ],
+        ),
+        Positioned(
+          top: 16,
+          right: 16,
+          child: Row(
+            children: [
+              _buildTopIcon(
+                Icons.format_list_bulleted_rounded,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const LeagueListPage()),
+                  );
+                },
+              ),
+              const SizedBox(width: 12),
+              _buildTopIcon(
+                Icons.search,
+                onTap: () {
+                  Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => const SearchPage()));
+                },
+              ),
+            ],
           ),
         ),
       ],
@@ -277,10 +308,7 @@ class _HomePageState extends State<HomePage> {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: Colors.white.withOpacity(0.2),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.3),
-            width: 1.5,
-          ),
+          border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
         ),
         padding: const EdgeInsets.all(8),
         child: Icon(icon, color: Colors.white, size: 20),
@@ -311,7 +339,11 @@ class _HomePageState extends State<HomePage> {
                     _matchesFuture = _loadMatches();
                   });
                 },
-                icon: Icon(Icons.refresh, color: Colors.yellow.shade600, size: 18),
+                icon: Icon(
+                  Icons.refresh,
+                  color: Colors.yellow.shade600,
+                  size: 18,
+                ),
                 label: Text(
                   'Refresh',
                   style: TextStyle(
@@ -347,8 +379,9 @@ class _HomePageState extends State<HomePage> {
 
               final groupedMatches = _groupMatchesByCompetition(matches);
               final allLeagues = groupedMatches.keys.toList();
-              final visibleLeagues =
-                  allLeagues.take(_visibleLeaguesCount).toList();
+              final visibleLeagues = allLeagues
+                  .take(_visibleLeaguesCount)
+                  .toList();
               final hasMoreLeagues = allLeagues.length > visibleLeagues.length;
 
               return Column(
@@ -410,7 +443,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildMatchesMessage({required String title, required String subtitle}) {
+  Widget _buildMatchesMessage({
+    required String title,
+    required String subtitle,
+  }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -440,7 +476,9 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Map<String, List<MatchItem>> _groupMatchesByCompetition(List<MatchItem> matches) {
+  Map<String, List<MatchItem>> _groupMatchesByCompetition(
+    List<MatchItem> matches,
+  ) {
     final grouped = <String, List<MatchItem>>{};
     for (final match in matches) {
       if (!grouped.containsKey(match.competition)) {
@@ -526,18 +564,24 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                 ),
-                Icon(Icons.arrow_forward_ios, color: Colors.yellow.shade600, size: 18),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.yellow.shade600,
+                  size: 18,
+                ),
               ],
             ),
           ),
           // Matches List
-          ...visibleMatches.map((match) => GestureDetector(
-            onTap: () => _navigateToMatchDetail(match),
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _buildSimpleMatchCard(match),
+          ...visibleMatches.map(
+            (match) => GestureDetector(
+              onTap: () => _navigateToMatchDetail(match),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _buildSimpleMatchCard(match),
+              ),
             ),
-          )),
+          ),
         ],
       ),
     );
@@ -546,20 +590,15 @@ class _HomePageState extends State<HomePage> {
   void _navigateToMatchDetail(MatchItem match) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => MatchDetailPage(
-          match: match,
-          category: 'soccer',
-        ),
+        builder: (_) => MatchDetailPage(match: match, category: 'soccer'),
       ),
     );
   }
 
   void _openNewsDetail(NewsItem item) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => NewsDetailPage(item: item),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => NewsDetailPage(item: item)));
   }
 
   Widget _buildSimpleMatchCard(MatchItem match) {
@@ -699,7 +738,8 @@ class _HomePageState extends State<HomePage> {
     final sourceUrl = trimmed.startsWith('http')
         ? trimmed
         : 'https://storage.livescore.com/images/team/medium/$trimmed';
-    return 'https://getimage.membertsd.workers.dev/?url=' + Uri.encodeComponent(sourceUrl);
+    return 'https://getimage.membertsd.workers.dev/?url=' +
+        Uri.encodeComponent(sourceUrl);
   }
 
   String _statusLabel(MatchItem match) {
@@ -722,7 +762,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   String _initials(String value) {
-    final parts = value.trim().split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
+    final parts = value
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
     if (parts.isEmpty) {
       return '--';
     }
@@ -749,13 +793,16 @@ class _HomePageState extends State<HomePage> {
       'assets/logo_sport/2.png',
       'assets/logo_sport/2.png',
     ];
+    final marqueeTeams = [...teams, ...teams];
 
     return SizedBox(
       height: 80,
       child: ListView.builder(
+        controller: _teamLogoScrollController,
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: teams.length,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: marqueeTeams.length,
         itemBuilder: (context, index) {
           return Padding(
             padding: const EdgeInsets.only(right: 12),
@@ -763,14 +810,19 @@ class _HomePageState extends State<HomePage> {
               width: 60,
               child: Center(
                 child: Image.asset(
-                  teams[index],
+                  marqueeTeams[index],
                   width: 80,
                   height: 80,
                   errorBuilder: (context, error, stackTrace) {
                     return const SizedBox(
                       width: 80,
                       height: 80,
-                      child: Center(child: Icon(Icons.shield_outlined, color: Colors.white54)),
+                      child: Center(
+                        child: Icon(
+                          Icons.shield_outlined,
+                          color: Colors.white54,
+                        ),
+                      ),
                     );
                   },
                 ),
@@ -938,6 +990,7 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
   Widget _buildNewsSection() {
     return FutureBuilder<List<NewsItem>>(
       future: _newsFuture,
@@ -1025,9 +1078,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildNewsPosterCard({
-    required NewsItem item,
-  }) {
+  Widget _buildNewsPosterCard({required NewsItem item}) {
     final accent = _newsAccent(item.category);
     final meta = _formatNewsMeta(item);
 
@@ -1103,9 +1154,7 @@ class _HomePageState extends State<HomePage> {
   }) {
     return Container(
       height: 270,
-      decoration: const BoxDecoration(
-        color: Color(0xFFF5F3EF),
-      ),
+      decoration: const BoxDecoration(color: Color(0xFFF5F3EF)),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -1195,10 +1244,7 @@ class _HomePageState extends State<HomePage> {
         ),
         child: Text(
           message,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.78),
-            fontSize: 14,
-          ),
+          style: TextStyle(color: Colors.white.withOpacity(0.78), fontSize: 14),
         ),
       ),
     );
@@ -1260,11 +1306,7 @@ class _HomePageState extends State<HomePage> {
     return Container(
       color: background,
       alignment: Alignment.center,
-      child: Icon(
-        icon,
-        color: Colors.white54,
-        size: 36,
-      ),
+      child: Icon(icon, color: Colors.white54, size: 36),
     );
   }
 
@@ -1277,16 +1319,16 @@ class _HomePageState extends State<HomePage> {
       currentIndex: _selectedIndex,
       onTap: (index) {
         if (index == 1) {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const NewsPage()),
-          );
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const NewsPage()));
           return;
         }
 
         if (index == 2) {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const LiveScorePage()),
-          );
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const LiveScorePage()));
           return;
         }
 
@@ -1295,10 +1337,7 @@ class _HomePageState extends State<HomePage> {
         });
       },
       items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          label: 'Home',
-        ),
+        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
         BottomNavigationBarItem(
           icon: Icon(Icons.description_outlined),
           label: 'News',
@@ -1313,19 +1352,12 @@ class _HomePageState extends State<HomePage> {
         ),
       ],
     );
-  } 
+  }
 }
 
 class BannerData {
   final String image;
   final String title;
 
-  BannerData({
-    required this.image,
-    required this.title,
-  });
+  BannerData({required this.image, required this.title});
 }
-
-
-
-
