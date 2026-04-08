@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../models/league_option.dart';
 import '../../services/live_score_service.dart';
+import '../../theme/app_palette.dart';
+import '../../widgets/app_skeleton.dart';
 import 'league_matches_page.dart';
 
 class LeagueListPage extends StatefulWidget {
@@ -43,10 +45,10 @@ class _LeagueListPageState extends State<LeagueListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppPalette.pageBackground,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: AppPalette.pageBackground,
+        foregroundColor: AppPalette.textPrimary,
         elevation: 0,
         title: const Text(
           'All Leagues',
@@ -54,33 +56,35 @@ class _LeagueListPageState extends State<LeagueListPage> {
         ),
       ),
       body: RefreshIndicator(
-        color: Colors.yellow.shade600,
-        backgroundColor: const Color(0xFF1E1E1E),
+        color: AppPalette.accent,
+        backgroundColor: AppPalette.surfaceMuted,
         onRefresh: _refreshLeagues,
         child: FutureBuilder<List<LeagueOption>>(
           future: _leaguesFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 24),
-                children: [
-                  _buildLeagueHero(),
-                  const SizedBox(height: 10),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 14,
-                          crossAxisSpacing: 14,
-                          childAspectRatio: 1.08,
-                        ),
-                    itemCount: 6,
-                    itemBuilder: (_, __) => _buildLeagueSkeletonCard(),
-                  ),
-                ],
+              return SkeletonShimmer(
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 24),
+                  children: [
+                    _buildLeagueHeroSkeleton(),
+                    const SizedBox(height: 10),
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 14,
+                            crossAxisSpacing: 14,
+                            childAspectRatio: 1.08,
+                          ),
+                      itemCount: 6,
+                      itemBuilder: (_, __) => _buildLeagueSkeletonCard(),
+                    ),
+                  ],
+                ),
               );
             }
 
@@ -379,6 +383,30 @@ class _LeagueListPageState extends State<LeagueListPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildLeagueHeroSkeleton() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF151515),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SkeletonBone(width: 68, height: 18, radius: 999),
+          SizedBox(height: 12),
+          SkeletonBone(width: 140, height: 14),
+          SizedBox(height: 8),
+          SkeletonBone(width: double.infinity, height: 10),
+          SizedBox(height: 6),
+          SkeletonBone(width: 190, height: 10),
+        ],
       ),
     );
   }

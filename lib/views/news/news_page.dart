@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../models/news_item.dart';
 import '../../services/live_score_service.dart';
+import '../../theme/app_palette.dart';
+import '../../widgets/app_skeleton.dart';
 import 'news_detail_page.dart';
 
 class NewsPage extends StatefulWidget {
@@ -16,11 +18,13 @@ class NewsPage extends StatefulWidget {
 class _NewsPageState extends State<NewsPage> {
   final LiveScoreService _liveScoreService = const LiveScoreService();
 
-  static const String _sportCategoryId = '20210209133211500030'; // Soccer category ID
-  
+  static const String _sportCategoryId =
+      '20210209133211500030'; // Soccer category ID
+
   final List<_NewsBannerItem> _bannerItems = const [
     _NewsBannerItem(
-      image: 'https://wallpapers.com/images/featured/soccer-y8vz4oxbfbc5t6lr.jpg',
+      image:
+          'https://wallpapers.com/images/featured/soccer-y8vz4oxbfbc5t6lr.jpg',
       title: 'Football headlines and transfer talk from around the world',
     ),
     _NewsBannerItem(
@@ -28,11 +32,13 @@ class _NewsPageState extends State<NewsPage> {
       title: 'Basketball spotlight: the biggest stories from today',
     ),
     _NewsBannerItem(
-      image: 'https://wallpapersok.com/images/hd/soccer-teams-fc-barcelona-and-real-madrid-cf-u78rrvtgn14nbzz4.jpg',
+      image:
+          'https://wallpapersok.com/images/hd/soccer-teams-fc-barcelona-and-real-madrid-cf-u78rrvtgn14nbzz4.jpg',
       title: 'Championship pressure rises as teams battle for every point',
     ),
     _NewsBannerItem(
-      image: 'https://assets.fiba.basketball/image/upload/v1722790482/i3n5qmg4nlp1mome7paw.jpg',
+      image:
+          'https://assets.fiba.basketball/image/upload/v1722790482/i3n5qmg4nlp1mome7paw.jpg',
       title: 'Tennis stars prepare for another dramatic week on tour',
     ),
     _NewsBannerItem(
@@ -40,7 +46,8 @@ class _NewsPageState extends State<NewsPage> {
       title: 'Matchday stories, tactical shifts, and breakout performers',
     ),
     _NewsBannerItem(
-      image: 'https://wallpapers.com/images/hd/nick-kyrgios-in-a-tennis-match-5lhkuvgoxgag2c5w.jpg',
+      image:
+          'https://wallpapers.com/images/hd/nick-kyrgios-in-a-tennis-match-5lhkuvgoxgag2c5w.jpg',
       title: 'Basketball rivalries heat up with playoff hopes on the line',
     ),
     _NewsBannerItem(
@@ -48,7 +55,8 @@ class _NewsPageState extends State<NewsPage> {
       title: 'Football form guide: who is rising and who is fading',
     ),
     _NewsBannerItem(
-      image: 'https://www.mancity.com/meta/media/eufgytr1/tf300516-f-1920x1080-52dc979.jpg?width=1620',
+      image:
+          'https://www.mancity.com/meta/media/eufgytr1/tf300516-f-1920x1080-52dc979.jpg?width=1620',
       title: 'Top athletes, strong finishes, and headlines worth watching',
     ),
     _NewsBannerItem(
@@ -56,7 +64,8 @@ class _NewsPageState extends State<NewsPage> {
       title: 'Latest sports reactions, momentum swings, and key moments',
     ),
     _NewsBannerItem(
-      image: 'https://upload.wikimedia.org/wikipedia/commons/0/06/Steph_Curry_%2851915116957%29.jpg',
+      image:
+          'https://upload.wikimedia.org/wikipedia/commons/0/06/Steph_Curry_%2851915116957%29.jpg',
       title: 'Every sport, one feed: the stories setting the pace today',
     ),
   ];
@@ -86,16 +95,20 @@ class _NewsPageState extends State<NewsPage> {
         categoryId: _sportCategoryId,
         page: _currentPage,
       );
-      
+
       // If new endpoint returns empty, fall back to old news API
       if (news.isEmpty && _currentPage == 1) {
-        print('DEBUG: New news endpoint returned empty, falling back to old endpoint');
+        print(
+          'DEBUG: New news endpoint returned empty, falling back to old endpoint',
+        );
         return await _liveScoreService.fetchNews();
       }
-      
+
       return news;
     } catch (e) {
-      print('DEBUG: Error loading news from new endpoint: $e, falling back to old endpoint');
+      print(
+        'DEBUG: Error loading news from new endpoint: $e, falling back to old endpoint',
+      );
       // Fall back to old news endpoint on error
       if (_currentPage == 1) {
         return await _liveScoreService.fetchNews();
@@ -106,7 +119,7 @@ class _NewsPageState extends State<NewsPage> {
 
   Future<void> _loadMoreNews() async {
     if (_isLoadingMore) return;
-    
+
     setState(() {
       _isLoadingMore = true;
     });
@@ -117,10 +130,12 @@ class _NewsPageState extends State<NewsPage> {
         categoryId: _sportCategoryId,
         page: _currentPage,
       );
-      
+
       // If new endpoint returns nothing, try old endpoint
-      final news = moreNews.isNotEmpty ? moreNews : await _liveScoreService.fetchNews();
-      
+      final news = moreNews.isNotEmpty
+          ? moreNews
+          : await _liveScoreService.fetchNews();
+
       setState(() {
         _allNews.addAll(news);
       });
@@ -128,9 +143,9 @@ class _NewsPageState extends State<NewsPage> {
       _currentPage--;
       print('DEBUG: Error loading more news: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load more news: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to load more news: $e')));
       }
     } finally {
       if (mounted) {
@@ -155,11 +170,9 @@ class _NewsPageState extends State<NewsPage> {
   }
 
   void _openNewsDetail(NewsItem item) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => NewsDetailPage(item: item),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => NewsDetailPage(item: item)));
   }
 
   void _startBannerAnimation() {
@@ -187,11 +200,11 @@ class _NewsPageState extends State<NewsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppPalette.pageBackground,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: AppPalette.pageBackground,
+        foregroundColor: AppPalette.textPrimary,
         elevation: 0,
         title: const Text(
           'News',
@@ -199,8 +212,8 @@ class _NewsPageState extends State<NewsPage> {
         ),
       ),
       body: RefreshIndicator(
-        color: Colors.yellow.shade600,
-        backgroundColor: const Color(0xFF1E1E1E),
+        color: AppPalette.accent,
+        backgroundColor: AppPalette.surfaceMuted,
         onRefresh: _refreshNews,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -214,16 +227,13 @@ class _NewsPageState extends State<NewsPage> {
               future: _newsFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const SizedBox(
-                    height: 220,
-                    child: Center(
-                      child: CircularProgressIndicator(color: Colors.white70),
-                    ),
-                  );
+                  return const NewsFeedLoadingSkeleton();
                 }
 
                 if (snapshot.hasError) {
-                  return _buildNewsPlaceholder('Unable to load news right now.');
+                  return _buildNewsPlaceholder(
+                    'Unable to load news right now.',
+                  );
                 }
 
                 final newsItems = snapshot.data ?? const <NewsItem>[];
@@ -235,7 +245,8 @@ class _NewsPageState extends State<NewsPage> {
 
                 // Show all accumulated news from all pages
                 final visibleNews = _allNews.isNotEmpty ? _allNews : newsItems;
-                final hasMoreNews = _allNews.isNotEmpty; // Always show button if we loaded from API
+                final hasMoreNews = _allNews
+                    .isNotEmpty; // Always show button if we loaded from API
 
                 return Column(
                   children: [
@@ -247,7 +258,8 @@ class _NewsPageState extends State<NewsPage> {
                             : _buildNewsSplitCard(item: entry.value),
                       ),
                     ),
-                    if (hasMoreNews) _buildShowMoreNewsButton(visibleNews.length),
+                    if (hasMoreNews)
+                      _buildShowMoreNewsButton(visibleNews.length),
                   ],
                 );
               },
@@ -407,7 +419,7 @@ class _NewsPageState extends State<NewsPage> {
         onPressed: _isLoadingMore ? null : _loadMoreNews,
         style: OutlinedButton.styleFrom(
           side: BorderSide(
-            color: _isLoadingMore 
+            color: _isLoadingMore
                 ? Colors.yellow.shade600.withOpacity(0.5)
                 : Colors.yellow.shade600,
           ),
@@ -417,13 +429,8 @@ class _NewsPageState extends State<NewsPage> {
           ),
         ),
         child: _isLoadingMore
-            ? SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation(Colors.yellow.shade600),
-                ),
+            ? const SkeletonShimmer(
+                child: SkeletonBone(width: 86, height: 18, radius: 999),
               )
             : Text(
                 'Show More',
@@ -436,9 +443,7 @@ class _NewsPageState extends State<NewsPage> {
     );
   }
 
-  Widget _buildNewsPosterCard({
-    required NewsItem item,
-  }) {
+  Widget _buildNewsPosterCard({required NewsItem item}) {
     final accent = _newsAccent(item.category);
     final meta = _formatNewsMeta(item);
 
@@ -507,9 +512,7 @@ class _NewsPageState extends State<NewsPage> {
     );
   }
 
-  Widget _buildNewsSplitCard({
-    required NewsItem item,
-  }) {
+  Widget _buildNewsSplitCard({required NewsItem item}) {
     final meta = _formatNewsMeta(item);
 
     return InkWell(
@@ -619,9 +622,7 @@ class _NewsPageState extends State<NewsPage> {
   }) {
     return Container(
       height: 270,
-      decoration: const BoxDecoration(
-        color: Color(0xFFF5F3EF),
-      ),
+      decoration: const BoxDecoration(color: Color(0xFFF5F3EF)),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -709,10 +710,7 @@ class _NewsPageState extends State<NewsPage> {
       ),
       child: Text(
         message,
-        style: TextStyle(
-          color: Colors.white.withOpacity(0.78),
-          fontSize: 14,
-        ),
+        style: TextStyle(color: Colors.white.withOpacity(0.78), fontSize: 14),
       ),
     );
   }
@@ -724,11 +722,7 @@ class _NewsPageState extends State<NewsPage> {
     return Container(
       color: background,
       alignment: Alignment.center,
-      child: Icon(
-        icon,
-        color: Colors.white54,
-        size: 36,
-      ),
+      child: Icon(icon, color: Colors.white54, size: 36),
     );
   }
 
@@ -808,10 +802,7 @@ class _NewsPageState extends State<NewsPage> {
         }
       },
       items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          label: 'Home',
-        ),
+        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
         BottomNavigationBarItem(
           icon: Icon(Icons.description_outlined),
           label: 'News',
@@ -833,8 +824,5 @@ class _NewsBannerItem {
   final String image;
   final String title;
 
-  const _NewsBannerItem({
-    required this.image,
-    required this.title,
-  });
+  const _NewsBannerItem({required this.image, required this.title});
 }

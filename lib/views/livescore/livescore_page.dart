@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../models/match_item.dart';
 import '../../services/live_score_service.dart';
+import '../../theme/app_palette.dart';
+import '../../widgets/app_skeleton.dart';
 import '../news/news_page.dart';
 import 'match_detail_page.dart';
 
@@ -165,11 +167,11 @@ class _LiveScorePageState extends State<LiveScorePage> {
     );
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppPalette.pageBackground,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: AppPalette.pageBackground,
+        foregroundColor: AppPalette.textPrimary,
         elevation: 0,
         title: const Text(
           'Live Scores',
@@ -177,8 +179,8 @@ class _LiveScorePageState extends State<LiveScorePage> {
         ),
       ),
       body: RefreshIndicator(
-        color: Colors.yellow.shade600,
-        backgroundColor: const Color(0xFF1E1E1E),
+        color: AppPalette.accent,
+        backgroundColor: AppPalette.surfaceMuted,
         onRefresh: _refreshMatches,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -475,17 +477,7 @@ class _LiveScorePageState extends State<LiveScorePage> {
   }
 
   Widget _buildLoadingState() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 48),
-      decoration: BoxDecoration(
-        color: const Color(0xFF151515),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Center(
-        child: CircularProgressIndicator(color: Colors.yellow.shade600),
-      ),
-    );
+    return const MatchListLoadingSkeleton(cardCount: 4);
   }
 
   Widget _buildMessageCard({required String title, required String subtitle}) {

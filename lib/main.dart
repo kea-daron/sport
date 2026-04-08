@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'theme/app_palette.dart';
 import 'views/welcome/welcome_page.dart';
 import 'views/home/home_page.dart';
 import 'views/livescore/livescore_page.dart';
@@ -17,7 +18,18 @@ class MyApp extends StatelessWidget {
       title: 'Sport App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        scaffoldBackgroundColor: AppPalette.pageBackground,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppPalette.brand,
+          brightness: Brightness.dark,
+          primary: AppPalette.brand,
+          surface: AppPalette.surface,
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: AppPalette.pageBackground,
+          foregroundColor: AppPalette.textPrimary,
+          elevation: 0,
+        ),
         useMaterial3: true,
       ),
       initialRoute: '/',

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../models/search_result.dart';
 import '../../services/live_score_service.dart';
+import '../../theme/app_palette.dart';
+import '../../widgets/app_skeleton.dart';
 import '../league/league_matches_page.dart';
 import '../livescore/match_detail_page.dart';
 
@@ -17,11 +19,31 @@ class _SearchPageState extends State<SearchPage> {
   final TextEditingController _queryController = TextEditingController();
 
   static const List<_SearchCategory> _categories = [
-    _SearchCategory(label: 'Soccer', apiValue: 'soccer', icon: Icons.sports_soccer),
-    _SearchCategory(label: 'Cricket', apiValue: 'cricket', icon: Icons.sports_cricket),
-    _SearchCategory(label: 'Basketball', apiValue: 'basketball', icon: Icons.sports_basketball),
-    _SearchCategory(label: 'Tennis', apiValue: 'tennis', icon: Icons.sports_tennis),
-    _SearchCategory(label: 'Hockey', apiValue: 'hockey', icon: Icons.sports_hockey),
+    _SearchCategory(
+      label: 'Soccer',
+      apiValue: 'soccer',
+      icon: Icons.sports_soccer,
+    ),
+    _SearchCategory(
+      label: 'Cricket',
+      apiValue: 'cricket',
+      icon: Icons.sports_cricket,
+    ),
+    _SearchCategory(
+      label: 'Basketball',
+      apiValue: 'basketball',
+      icon: Icons.sports_basketball,
+    ),
+    _SearchCategory(
+      label: 'Tennis',
+      apiValue: 'tennis',
+      icon: Icons.sports_tennis,
+    ),
+    _SearchCategory(
+      label: 'Hockey',
+      apiValue: 'hockey',
+      icon: Icons.sports_hockey,
+    ),
   ];
 
   late _SearchCategory _selectedCategory;
@@ -101,10 +123,10 @@ class _SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppPalette.pageBackground,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: AppPalette.pageBackground,
+        foregroundColor: AppPalette.textPrimary,
         elevation: 0,
         title: const Text(
           'Search',
@@ -165,7 +187,9 @@ class _SearchPageState extends State<SearchPage> {
             duration: const Duration(milliseconds: 180),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: isSelected ? Colors.yellow.shade600 : const Color(0xFF141414),
+              color: isSelected
+                  ? Colors.yellow.shade600
+                  : const Color(0xFF141414),
               borderRadius: BorderRadius.circular(999),
               border: Border.all(
                 color: isSelected
@@ -201,7 +225,8 @@ class _SearchPageState extends State<SearchPage> {
     if (_resultsFuture == null) {
       return _buildMessageCard(
         title: 'Start a search',
-        subtitle: 'Pick a sport and search for a team, league, or match keyword.',
+        subtitle:
+            'Pick a sport and search for a team, league, or match keyword.',
       );
     }
 
@@ -209,10 +234,7 @@ class _SearchPageState extends State<SearchPage> {
       future: _resultsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 48),
-            child: Center(child: CircularProgressIndicator()),
-          );
+          return const SearchResultsLoadingSkeleton();
         }
 
         if (snapshot.hasError) {
@@ -226,13 +248,12 @@ class _SearchPageState extends State<SearchPage> {
         if (results.isEmpty) {
           return _buildMessageCard(
             title: 'No results found',
-            subtitle: 'No matches were found for "$_submittedQuery" in ${_selectedCategory.label}.',
+            subtitle:
+                'No matches were found for "$_submittedQuery" in ${_selectedCategory.label}.',
           );
         }
 
-        return Column(
-          children: results.map(_buildResultCard).toList(),
-        );
+        return Column(children: results.map(_buildResultCard).toList());
       },
     );
   }
@@ -281,7 +302,8 @@ class _SearchPageState extends State<SearchPage> {
                         height: 1.3,
                       ),
                     ),
-                    if (result.homeTeam.isNotEmpty || result.awayTeam.isNotEmpty) ...[
+                    if (result.homeTeam.isNotEmpty ||
+                        result.awayTeam.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Text(
                         '${result.homeTeam}${result.awayTeam.isNotEmpty ? ' vs ${result.awayTeam}' : ''}',
@@ -366,10 +388,7 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  Widget _buildMessageCard({
-    required String title,
-    required String subtitle,
-  }) {
+  Widget _buildMessageCard({required String title, required String subtitle}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),

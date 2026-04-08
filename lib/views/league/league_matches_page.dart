@@ -3,15 +3,14 @@ import 'package:flutter/material.dart';
 import '../../models/league_option.dart';
 import '../../models/match_item.dart';
 import '../../services/live_score_service.dart';
+import '../../theme/app_palette.dart';
+import '../../widgets/app_skeleton.dart';
 import '../livescore/match_detail_page.dart';
 
 class LeagueMatchesPage extends StatefulWidget {
   final LeagueOption league;
 
-  const LeagueMatchesPage({
-    required this.league,
-    super.key,
-  });
+  const LeagueMatchesPage({required this.league, super.key});
 
   @override
   State<LeagueMatchesPage> createState() => _LeagueMatchesPageState();
@@ -52,10 +51,10 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppPalette.pageBackground,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: AppPalette.pageBackground,
+        foregroundColor: AppPalette.textPrimary,
         elevation: 0,
         title: Text(
           widget.league.title,
@@ -63,8 +62,8 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
         ),
       ),
       body: RefreshIndicator(
-        color: Colors.yellow.shade600,
-        backgroundColor: const Color(0xFF1E1E1E),
+        color: AppPalette.accent,
+        backgroundColor: AppPalette.surfaceMuted,
         onRefresh: _refreshMatches,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -96,7 +95,9 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
 
                 final groupedMatches = _groupMatchesByStatus(matches);
                 final allGroups = groupedMatches.entries.toList();
-                final visibleGroups = allGroups.take(_visibleMatchesCount).toList();
+                final visibleGroups = allGroups
+                    .take(_visibleMatchesCount)
+                    .toList();
                 final hasMoreMatches = allGroups.length > visibleGroups.length;
 
                 return Column(
@@ -119,7 +120,9 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
   }
 
   Widget _buildHeroHeader() {
-    final groupText = widget.league.scd.isEmpty ? 'All league matches' : widget.league.scd.replaceAll('-', ' ').toUpperCase();
+    final groupText = widget.league.scd.isEmpty
+        ? 'All league matches'
+        : widget.league.scd.replaceAll('-', ' ').toUpperCase();
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -176,23 +179,10 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
   }
 
   Widget _buildLoadingState() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 32),
-      decoration: BoxDecoration(
-        color: const Color(0xFF151515),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Center(
-        child: CircularProgressIndicator(color: Colors.yellow.shade600),
-      ),
-    );
+    return const MatchListLoadingSkeleton(cardCount: 4);
   }
 
-  Widget _buildMessageCard({
-    required String title,
-    required String subtitle,
-  }) {
+  Widget _buildMessageCard({required String title, required String subtitle}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -227,28 +217,26 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
 
   Map<String, List<MatchItem>> _groupMatchesByStatus(List<MatchItem> matches) {
     final grouped = <String, List<MatchItem>>{};
-    
+
     // Separate upcoming and finished matches
     final upcoming = matches.where((m) => m.status == 'NS').toList();
     final finished = matches.where((m) => m.status != 'NS').toList();
-    
+
     if (upcoming.isNotEmpty) {
       grouped['Upcoming'] = upcoming;
     }
     if (finished.isNotEmpty) {
       grouped['Finished'] = finished;
     }
-    
+
     return grouped;
   }
 
   void _navigateToMatchDetail(MatchItem match) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => MatchDetailPage(
-          match: match,
-          category: widget.league.category,
-        ),
+        builder: (_) =>
+            MatchDetailPage(match: match, category: widget.league.category),
       ),
     );
   }
@@ -279,7 +267,9 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
                   ),
                   child: Center(
                     child: Icon(
-                      status == 'Upcoming' ? Icons.schedule : Icons.check_circle,
+                      status == 'Upcoming'
+                          ? Icons.schedule
+                          : Icons.check_circle,
                       color: status == 'Upcoming' ? Colors.blue : Colors.green,
                       size: 18,
                     ),
@@ -501,7 +491,8 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
     final sourceUrl = trimmed.startsWith('http')
         ? trimmed
         : 'https://storage.livescore.com/images/team/medium/$trimmed';
-    return 'https://getimage.membertsd.workers.dev/?url=' + Uri.encodeComponent(sourceUrl);
+    return 'https://getimage.membertsd.workers.dev/?url=' +
+        Uri.encodeComponent(sourceUrl);
   }
 
   String _statusLabel(MatchItem match) {

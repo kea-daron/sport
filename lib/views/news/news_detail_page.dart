@@ -3,14 +3,13 @@ import 'package:flutter/material.dart';
 import '../../models/news_detail.dart';
 import '../../models/news_item.dart';
 import '../../services/live_score_service.dart';
+import '../../theme/app_palette.dart';
+import '../../widgets/app_skeleton.dart';
 
 class NewsDetailPage extends StatefulWidget {
   final NewsItem item;
 
-  const NewsDetailPage({
-    required this.item,
-    super.key,
-  });
+  const NewsDetailPage({required this.item, super.key});
 
   @override
   State<NewsDetailPage> createState() => _NewsDetailPageState();
@@ -48,10 +47,10 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppPalette.pageBackground,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: AppPalette.pageBackground,
+        foregroundColor: AppPalette.textPrimary,
         elevation: 0,
         title: const Text(
           'News Detail',
@@ -59,24 +58,14 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
         ),
       ),
       body: RefreshIndicator(
-        color: Colors.yellow.shade600,
-        backgroundColor: const Color(0xFF1E1E1E),
+        color: AppPalette.accent,
+        backgroundColor: AppPalette.surfaceMuted,
         onRefresh: _refresh,
         child: FutureBuilder<NewsDetail>(
           future: _detailFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return ListView(
-                physics: AlwaysScrollableScrollPhysics(),
-                children: [
-                  SizedBox(
-                    height: 420,
-                    child: Center(
-                      child: CircularProgressIndicator(color: Colors.white70),
-                    ),
-                  ),
-                ],
-              );
+              return const NewsDetailLoadingSkeleton();
             }
 
             if (snapshot.hasError) {
@@ -92,7 +81,8 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
               );
             }
 
-            final detail = snapshot.data ?? NewsDetail.fromNewsItem(widget.item);
+            final detail =
+                snapshot.data ?? NewsDetail.fromNewsItem(widget.item);
             return _buildContent(detail);
           },
         ),
@@ -143,7 +133,9 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
                 ),
               ],
               const SizedBox(height: 20),
-              _buildBodyCard(detail.content.trim().isEmpty ? detail.summary : detail.content),
+              _buildBodyCard(
+                detail.content.trim().isEmpty ? detail.summary : detail.content,
+              ),
             ],
           ),
         ),
@@ -157,7 +149,11 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
         height: 260,
         color: const Color(0xFF191919),
         alignment: Alignment.center,
-        child: Icon(Icons.newspaper_rounded, color: Colors.yellow.shade600, size: 56),
+        child: Icon(
+          Icons.newspaper_rounded,
+          color: Colors.yellow.shade600,
+          size: 56,
+        ),
       );
     }
 
@@ -171,7 +167,11 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
           return Container(
             color: const Color(0xFF191919),
             alignment: Alignment.center,
-            child: Icon(Icons.image_not_supported_outlined, color: Colors.white54, size: 48),
+            child: Icon(
+              Icons.image_not_supported_outlined,
+              color: Colors.white54,
+              size: 48,
+            ),
           );
         },
       ),
@@ -217,10 +217,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
     );
   }
 
-  Widget _buildMessageCard({
-    required String title,
-    required String subtitle,
-  }) {
+  Widget _buildMessageCard({required String title, required String subtitle}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),

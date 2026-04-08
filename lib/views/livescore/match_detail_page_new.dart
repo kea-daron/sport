@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/match_item.dart';
 import '../../services/live_score_service.dart';
+import '../../widgets/app_skeleton.dart';
 
 class MatchDetailPage extends StatefulWidget {
   final MatchItem match;
@@ -53,9 +54,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
         future: _detailFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: CircularProgressIndicator(color: Colors.yellow.shade600),
-            );
+            return const MatchDetailLoadingSkeleton();
           }
 
           if (snapshot.hasError) {
@@ -142,14 +141,9 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
           future: _lineupsFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF171717),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withOpacity(0.08)),
-                ),
-                padding: const EdgeInsets.all(16),
-                child: CircularProgressIndicator(color: Colors.yellow.shade600),
+              return const MatchListLoadingSkeleton(
+                cardCount: 1,
+                showHeader: false,
               );
             }
 

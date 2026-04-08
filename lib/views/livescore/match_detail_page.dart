@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../models/match_item.dart';
 import '../../services/live_score_service.dart';
+import '../../theme/app_palette.dart';
+import '../../widgets/app_skeleton.dart';
 
 class MatchDetailPage extends StatefulWidget {
   final MatchItem match;
@@ -162,10 +164,10 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppPalette.pageBackground,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        backgroundColor: AppPalette.pageBackground,
+        foregroundColor: AppPalette.textPrimary,
         elevation: 0,
         title: Text(
           '${widget.match.homeTeam} vs ${widget.match.awayTeam}',
@@ -177,9 +179,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
         future: _detailFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: CircularProgressIndicator(color: Colors.yellow.shade600),
-            );
+            return const MatchDetailLoadingSkeleton();
           }
 
           if (snapshot.hasError) {
@@ -302,9 +302,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       future: _scoreboardFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: CircularProgressIndicator(color: Colors.yellow.shade600),
-          );
+          return const MatchDetailLoadingSkeleton();
         }
 
         if (snapshot.hasError) {
@@ -1132,9 +1130,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       future: _lineupsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: CircularProgressIndicator(color: Colors.yellow.shade600),
-          );
+          return const MatchListLoadingSkeleton(cardCount: 3, showHeader: true);
         }
 
         if (snapshot.hasError) {
@@ -2147,9 +2143,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       future: _statisticsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: CircularProgressIndicator(color: Colors.yellow.shade600),
-          );
+          return const MatchListLoadingSkeleton(cardCount: 3, showHeader: true);
         }
 
         if (snapshot.hasError) {
@@ -2549,9 +2543,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       future: Future.wait([_homePlayerStatsFuture, _awayPlayerStatsFuture]),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: CircularProgressIndicator(color: Colors.yellow.shade600),
-          );
+          return const MatchListLoadingSkeleton(cardCount: 2, showHeader: false);
         }
 
         final payloads = snapshot.data ?? const <Map<String, dynamic>>[];
@@ -2894,9 +2886,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       future: Future.wait([_homeTeamStatsFuture, _awayTeamStatsFuture]),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: CircularProgressIndicator(color: Colors.yellow.shade600),
-          );
+          return const MatchListLoadingSkeleton(cardCount: 2, showHeader: false);
         }
 
         final payloads = snapshot.data ?? const <Map<String, dynamic>>[];
@@ -3176,9 +3166,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       future: _h2hFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: CircularProgressIndicator(color: Colors.yellow.shade600),
-          );
+          return const MatchListLoadingSkeleton(cardCount: 3, showHeader: true);
         }
 
         if (snapshot.hasError) {
@@ -3340,9 +3328,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       future: _tableFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: CircularProgressIndicator(color: Colors.yellow.shade600),
-          );
+          return const MatchListLoadingSkeleton(cardCount: 4, showHeader: true);
         }
 
         if (snapshot.hasError) {
@@ -4103,17 +4089,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       future: Future.wait([_homeTeamDetailFuture, _awayTeamDetailFuture]),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF171717),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withOpacity(0.08)),
-            ),
-            padding: const EdgeInsets.all(20),
-            child: Center(
-              child: CircularProgressIndicator(color: Colors.yellow.shade600),
-            ),
-          );
+          return const MatchListLoadingSkeleton(cardCount: 2, showHeader: false);
         }
 
         final details = snapshot.data ?? const <Map<String, dynamic>>[];

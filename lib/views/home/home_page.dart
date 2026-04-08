@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import '../../models/match_item.dart';
 import '../../models/news_item.dart';
 import '../../services/live_score_service.dart';
+import '../../theme/app_palette.dart';
+import '../../widgets/app_skeleton.dart';
 import '../league/league_list_page.dart';
 import '../livescore/livescore_page.dart';
 import '../livescore/match_detail_page.dart';
@@ -144,10 +146,10 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 0, 0, 0),
+      backgroundColor: AppPalette.pageBackground,
       body: RefreshIndicator(
-        color: Colors.yellow.shade600,
-        backgroundColor: const Color(0xFF1E1E1E),
+        color: AppPalette.accent,
+        backgroundColor: AppPalette.surfaceMuted,
         onRefresh: _refreshMatches,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -429,18 +431,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildMatchesLoading() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF171717),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
-      ),
-      child: const Center(
-        child: CircularProgressIndicator(color: Color(0xFFFFC857)),
-      ),
-    );
+    return const MatchListLoadingSkeleton(cardCount: 3, showHeader: false);
   }
 
   Widget _buildMatchesMessage({
@@ -998,12 +989,7 @@ class _HomePageState extends State<HomePage> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
-            child: SizedBox(
-              height: 220,
-              child: Center(
-                child: CircularProgressIndicator(color: Colors.white70),
-              ),
-            ),
+            child: NewsFeedLoadingSkeleton(),
           );
         }
 
