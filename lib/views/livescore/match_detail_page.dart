@@ -305,23 +305,19 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
           return const MatchDetailLoadingSkeleton();
         }
 
-        if (snapshot.hasError) {
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _buildInlineInfoCard(
-                title: 'Match Summary',
-                message: 'Unable to load scoreboard data right now.',
-                accentColor: Colors.orange.shade400,
-              ),
-            ],
-          );
-        }
-
-        final scoreboard = snapshot.data ?? {};
-        final summaryRows = _extractScoreboardRows(scoreboard);
-        final timelineItems = _extractScoreboardTimeline(scoreboard);
-        final highlightText = _extractScoreboardHighlight(scoreboard);
+        final scoreboard = snapshot.data ?? const <String, dynamic>{};
+        final summaryRows = _extractSummaryRows(
+          scoreboard: scoreboard,
+          detail: detail,
+        );
+        final timelineItems = _extractSummaryTimeline(
+          scoreboard: scoreboard,
+          detail: detail,
+        );
+        final highlightText = _extractSummaryHighlight(
+          scoreboard: scoreboard,
+          detail: detail,
+        );
 
         if (summaryRows.isEmpty &&
             timelineItems.isEmpty &&
@@ -485,28 +481,69 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                   ),
                   if (timelineItems.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'MATCH TIMELINE',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.42),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.5,
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.025),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.07),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Expanded(
+                                  child: Text(
+                                    'Timeline',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  width: 54,
+                                  height: 54,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.05),
+                                    borderRadius: BorderRadius.circular(18),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.05),
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    Icons.open_in_full_rounded,
+                                    color: Colors.white.withOpacity(0.82),
+                                    size: 20,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 20),
                           ...timelineItems.map((item) {
+                            if (item['kind'] == 'divider') {
+                              return _buildTimelineDividerRow(item['label'] ?? '');
+                            }
+
                             final side = item['side'] ?? 'neutral';
                             final isHome = side == 'home';
                             final isAway = side == 'away';
+                            final isNeutral = !isHome && !isAway;
 
-                            return SizedBox(
-                              height: 72,
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                               child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   Expanded(
                                     child: isHome
@@ -515,57 +552,19 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                                             alignEnd: true,
                                             accentColor: Colors.yellow.shade600,
                                           )
+                                        : isNeutral
+                                        ? _buildTimelineSide(
+                                            item,
+                                            alignEnd: true,
+                                            accentColor: Colors.white70,
+                                          )
                                         : const SizedBox.shrink(),
                                   ),
-                                  SizedBox(
-                                    width: 56,
-                                    child: Column(
-                                      children: [
-                                        Expanded(
-                                          child: Container(
-                                            width: 1,
-                                            color: Colors.white.withOpacity(
-                                              0.08,
-                                            ),
-                                          ),
-                                        ),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 5,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(
-                                              0.08,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              999,
-                                            ),
-                                            border: Border.all(
-                                              color: Colors.white.withOpacity(
-                                                0.08,
-                                              ),
-                                            ),
-                                          ),
-                                          child: Text(
-                                            item['minute'] ?? '',
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          child: Container(
-                                            width: 1,
-                                            color: Colors.white.withOpacity(
-                                              0.08,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
                                     ),
+                                    child: _buildTimelineMinuteChip(item),
                                   ),
                                   Expanded(
                                     child: isAway
@@ -573,6 +572,10 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                                             item,
                                             alignEnd: false,
                                             accentColor: Colors.blue.shade300,
+                                          )
+                                        : isNeutral
+                                        ? const SizedBox(
+                                            width: double.infinity,
                                           )
                                         : const SizedBox.shrink(),
                                   ),
@@ -680,9 +683,9 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     required bool alignEnd,
     required Color accentColor,
   }) {
-    final iconType = item['icon'] ?? 'default';
     final title = item['title'] ?? '';
     final subtitle = item['subtitle'] ?? '';
+    final nameParts = _splitTimelineDisplayName(title);
 
     return Padding(
       padding: EdgeInsets.only(left: alignEnd ? 0 : 8, right: alignEnd ? 8 : 0),
@@ -693,76 +696,413 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Row(
-            mainAxisAlignment: alignEnd
-                ? MainAxisAlignment.end
-                : MainAxisAlignment.start,
-            children: [
-              if (!alignEnd) _buildTimelineIcon(iconType, accentColor),
-              if (!alignEnd) const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  title,
-                  textAlign: alignEnd ? TextAlign.right : TextAlign.left,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              if (alignEnd) const SizedBox(width: 8),
-              if (alignEnd) _buildTimelineIcon(iconType, accentColor),
-            ],
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: alignEnd
+                ? [
+                    Flexible(
+                      child: _buildTimelineTextBlock(
+                        nameParts: nameParts,
+                        subtitle: subtitle,
+                        alignEnd: true,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildTimelineEventMarker(item, accentColor),
+                    const SizedBox(width: 8),
+                    Expanded(child: _buildTimelineConnector()),
+                  ]
+                : [
+                    Expanded(child: _buildTimelineConnector()),
+                    const SizedBox(width: 8),
+                    _buildTimelineEventMarker(item, accentColor),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: _buildTimelineTextBlock(
+                        nameParts: nameParts,
+                        subtitle: subtitle,
+                        alignEnd: false,
+                      ),
+                    ),
+                  ],
           ),
-          if (subtitle.isNotEmpty) ...[
-            const SizedBox(height: 3),
-            Text(
-              subtitle,
-              textAlign: alignEnd ? TextAlign.right : TextAlign.left,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.6),
-                fontSize: 10,
-                height: 1.25,
-              ),
-            ),
-          ],
         ],
       ),
     );
   }
 
-  Widget _buildTimelineIcon(String iconType, Color accentColor) {
-    IconData icon;
-    Color color;
+  Widget _buildTimelineTextBlock({
+    required (String, String) nameParts,
+    required String subtitle,
+    required bool alignEnd,
+  }) {
+    return Column(
+      crossAxisAlignment:
+          alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        Text(
+          nameParts.$1,
+          textAlign: alignEnd ? TextAlign.right : TextAlign.left,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 11.5,
+            fontWeight: FontWeight.w800,
+            height: 1.1,
+          ),
+        ),
+        if (nameParts.$2.isNotEmpty) ...[
+          const SizedBox(height: 3),
+          Text(
+            '(${nameParts.$2})',
+            textAlign: alignEnd ? TextAlign.right : TextAlign.left,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.4),
+              fontSize: 9.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+        if (subtitle.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            textAlign: alignEnd ? TextAlign.right : TextAlign.left,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.68),
+              fontSize: 9.5,
+              height: 1.28,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
 
-    switch (iconType) {
-      case 'goal':
-        icon = Icons.circle;
-        color = Colors.lightBlue.shade300;
-        break;
-      case 'yellow':
-        icon = Icons.stop;
-        color = Colors.yellow.shade600;
-        break;
-      case 'red':
-        icon = Icons.stop;
-        color = Colors.red.shade400;
-        break;
-      case 'penalty':
-        icon = Icons.circle;
-        color = Colors.green.shade400;
-        break;
-      default:
-        icon = Icons.circle;
-        color = accentColor;
-        break;
+  Widget _buildTimelineEventMarker(
+    Map<String, String> item,
+    Color accentColor,
+  ) {
+    final badge = item['badge'] ?? '';
+    final iconType = item['icon'] ?? 'default';
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (badge.isNotEmpty) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: Colors.white.withOpacity(0.35)),
+            ),
+            child: Text(
+              badge,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 7.5,
+                fontWeight: FontWeight.w800,
+                height: 1,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+        ],
+        _buildTimelineIcon(iconType, accentColor),
+      ],
+    );
+  }
+
+  Widget _buildTimelineDividerRow(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 20),
+      child: Row(
+        children: [
+          Expanded(child: _buildTimelineConnector()),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.74),
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          Expanded(child: _buildTimelineConnector()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineConnector() {
+    return Container(
+      height: 1,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.transparent,
+            Colors.white.withOpacity(0.12),
+            Colors.transparent,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimelineMinuteChip(Map<String, String> item) {
+    final iconType = item['icon'] ?? 'default';
+    final isGoalStyle = iconType == 'goal' || iconType == 'penalty_goal';
+
+    return Container(
+      constraints: const BoxConstraints(minWidth: 64),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: isGoalStyle ? Colors.white : const Color(0xFF1F1F1F),
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.18),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        border: Border.all(
+          color: isGoalStyle
+              ? Colors.white.withOpacity(0.9)
+              : Colors.white.withOpacity(0.04),
+        ),
+      ),
+      child: Text(
+        item['minute'] ?? '',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: isGoalStyle ? Colors.black : Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
+  (String, String) _splitTimelineDisplayName(String value) {
+    final trimmed = value.trim();
+    final start = trimmed.indexOf('(');
+    final end = trimmed.lastIndexOf(')');
+
+    if (start <= 0 || end <= start) {
+      return (trimmed, '');
     }
 
-    return Icon(icon, size: 15, color: color);
+    final primary = trimmed.substring(0, start).trim();
+    final secondary = trimmed.substring(start + 1, end).trim();
+    return (primary, secondary);
+  }
+
+  Widget _buildTimelineIcon(String iconType, Color accentColor) {
+    final color = _timelineIconColorSafe(iconType, accentColor);
+
+    if (iconType == 'goal' || iconType == 'penalty_goal') {
+      return Container(
+        width: 26,
+        height: 26,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withOpacity(0.22),
+              Colors.white.withOpacity(0.08),
+            ],
+          ),
+          border: Border.all(color: Colors.white.withOpacity(0.18)),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.22),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        alignment: Alignment.center,
+        child: Container(
+          width: 18,
+          height: 18,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white,
+            border: Border.all(color: const Color(0xFF111111), width: 1.1),
+          ),
+          alignment: Alignment.center,
+          child: Icon(Icons.sports_soccer, size: 11, color: const Color(0xFF111111)),
+        ),
+      );
+    }
+
+    if (iconType == 'yellow' || iconType == 'red') {
+      return Container(
+        width: 26,
+        height: 26,
+        alignment: Alignment.center,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(
+              top: 4,
+              left: 6,
+              child: Transform.rotate(
+                angle: -0.12,
+                child: Container(
+                  width: 11,
+                  height: 15,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(3),
+                    border: Border.all(color: Colors.white.withOpacity(0.08)),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 3,
+              left: 9,
+              child: Transform.rotate(
+                angle: 0.08,
+                child: Container(
+                  width: 11,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(3),
+                    border: Border.all(
+                      color: Colors.black.withOpacity(0.18),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withOpacity(0.26),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (iconType == 'missed_penalty') {
+      return Container(
+        width: 26,
+        height: 26,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white.withOpacity(0.06),
+          border: Border.all(color: color.withOpacity(0.18)),
+        ),
+        alignment: Alignment.center,
+        child: Icon(
+          Icons.close_rounded,
+          size: 14,
+          color: color,
+        ),
+      );
+    }
+
+    if (iconType == 'own_goal') {
+      return Container(
+        width: 26,
+        height: 26,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white.withOpacity(0.06),
+          border: Border.all(color: color.withOpacity(0.18)),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          'OG',
+          style: TextStyle(
+            color: color,
+            fontSize: 8,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      );
+    }
+
+    final symbol = _timelineIconSymbolSafe(iconType);
+
+    return Container(
+      width: 26,
+      height: 26,
+      alignment: Alignment.center,
+      child: symbol.isEmpty
+          ? Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: color,
+              ),
+            )
+          : Text(
+              symbol,
+              style: TextStyle(
+                color: color,
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+    );
+  }
+
+  Color _timelineIconColorSafe(String iconType, Color accentColor) {
+    switch (iconType) {
+      case 'goal':
+        return const Color(0xFF22C55E);
+      case 'penalty_goal':
+        return const Color(0xFF15803D);
+      case 'missed_penalty':
+        return const Color(0xFFEF4444);
+      case 'own_goal':
+        return const Color(0xFFDC2626);
+      case 'yellow':
+        return const Color(0xFFFACC15);
+      case 'red':
+        return const Color(0xFFEF4444);
+      default:
+        return accentColor;
+    }
+  }
+
+  String _timelineIconSymbolSafe(String iconType) {
+    switch (iconType) {
+      case 'goal':
+        return 'G';
+      case 'penalty_goal':
+        return 'PG';
+      case 'missed_penalty':
+        return 'MP';
+      case 'own_goal':
+        return 'OG';
+      case 'yellow':
+        return 'YC';
+      case 'red':
+        return 'RC';
+      default:
+        return '';
+    }
   }
 
   List<Map<String, String>> _extractScoreboardRows(
@@ -827,6 +1167,123 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     }
 
     return rows.take(12).toList();
+  }
+
+  List<Map<String, String>> _extractSummaryRows({
+    required Map<String, dynamic> scoreboard,
+    required Map<String, dynamic> detail,
+  }) {
+    final rows = <Map<String, String>>[
+      ..._extractScoreboardRows(scoreboard),
+    ];
+    final seenLabels = rows
+        .map((row) => (row['label'] ?? '').toLowerCase())
+        .where((label) => label.isNotEmpty)
+        .toSet();
+
+    for (final row in _extractDetailSummaryRows(detail)) {
+      final label = (row['label'] ?? '').toLowerCase();
+      if (label.isEmpty || !seenLabels.add(label)) {
+        continue;
+      }
+      rows.add(row);
+      if (rows.length >= 12) {
+        break;
+      }
+    }
+
+    return rows.take(12).toList();
+  }
+
+  List<Map<String, String>> _extractDetailSummaryRows(
+    Map<String, dynamic> detail,
+  ) {
+    final rows = <Map<String, String>>[];
+    final matchInfo = detail['m'] is Map<String, dynamic>
+        ? detail['m'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+
+    void addRow(String label, String value, {String? right}) {
+      final trimmedValue = value.trim();
+      final trimmedRight = (right ?? '').trim();
+      if (trimmedValue.isEmpty && trimmedRight.isEmpty) {
+        return;
+      }
+
+      rows.add({
+        'label': label,
+        'left': trimmedValue.isEmpty ? '-' : trimmedValue,
+        'right': trimmedRight.isEmpty ? '-' : trimmedRight,
+      });
+    }
+
+    addRow('Competition', widget.match.competition, right: widget.match.country);
+    addRow(
+      'Score',
+      _displayScore(widget.match.homeScore),
+      right: _displayScore(widget.match.awayScore),
+    );
+    addRow(
+      'Status',
+      _statusLabel(widget.match.status),
+      right: _getStatusBadgeText(),
+    );
+
+    if (widget.match.startTime != null) {
+      addRow('Kickoff', _formatDateTime(widget.match.startTime!));
+    }
+
+    addRow(
+      'Venue',
+      _readNestedDisplayValue(matchInfo, const [
+        'Venue',
+        'venue',
+        'Vnm',
+        'vnm',
+        'Stadium',
+        'stadium',
+      ], ''),
+    );
+    addRow(
+      'Referee',
+      _readNestedDisplayValue(matchInfo, const [
+        'Ref',
+        'ref',
+        'Referee',
+        'referee',
+      ], ''),
+    );
+    addRow(
+      'Round',
+      _readNestedDisplayValue(matchInfo, const [
+        'Round',
+        'round',
+        'Rnd',
+        'rnd',
+      ], ''),
+    );
+    addRow(
+      'Stage',
+      _readNestedDisplayValue(matchInfo, const [
+        'Stg.Nm',
+        'Stg.nm',
+        'Stg.Snm',
+        'Stg.snm',
+        'stage.name',
+      ], ''),
+    );
+    addRow(
+      'Attendance',
+      _readNestedDisplayValue(matchInfo, const [
+        'Att',
+        'att',
+        'Attendance',
+        'attendance',
+      ], ''),
+    );
+    addRow('Match ID', widget.match.eid);
+
+    return rows;
   }
 
   void _collectScoreboardNodes(
@@ -906,9 +1363,123 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     ], '');
   }
 
+  String _extractSummaryHighlight({
+    required Map<String, dynamic> scoreboard,
+    required Map<String, dynamic> detail,
+  }) {
+    final scoreboardHighlight = _extractScoreboardHighlight(scoreboard);
+    if (scoreboardHighlight.isNotEmpty) {
+      return scoreboardHighlight;
+    }
+
+    final detailHighlight = _readNestedDisplayValue(detail, const [
+      'm.StatusText',
+      'm.statusText',
+      'm.EventStatus',
+      'm.eventStatus',
+      'm.Status',
+      'm.status',
+      'StatusText',
+      'statusText',
+      'Summary',
+      'summary',
+    ], '');
+    if (detailHighlight.isNotEmpty) {
+      return detailHighlight;
+    }
+
+    final venue = _readNestedDisplayValue(detail, const [
+      'm.Venue',
+      'm.venue',
+    ], '');
+    if (venue.isNotEmpty) {
+      return 'Venue: $venue';
+    }
+
+    return '';
+  }
+
+  List<Map<String, String>> _extractSummaryTimeline({
+    required Map<String, dynamic> scoreboard,
+    required Map<String, dynamic> detail,
+  }) {
+    final mergedTimeline = _mergeTimelineItems([
+      ..._extractScoreboardTimeline(scoreboard),
+      ..._extractScoreboardTimeline(detail),
+    ]);
+
+    return _decorateTimelineItems(
+      items: mergedTimeline,
+      scoreboard: scoreboard,
+      detail: detail,
+    );
+  }
+
+  List<Map<String, String>> _mergeTimelineItems(
+    List<Map<String, String>> items,
+  ) {
+    final mergedByKey = <String, Map<String, String>>{};
+
+    for (final item in items) {
+      final key = [
+        item['minute'] ?? '',
+        item['title'] ?? '',
+        item['side'] ?? '',
+      ].join('|').toLowerCase();
+
+      final existing = mergedByKey[key];
+      if (existing == null) {
+        mergedByKey[key] = item;
+        continue;
+      }
+
+      final existingScore = _timelineMergeScore(existing);
+      final currentScore = _timelineMergeScore(item);
+      if (currentScore > existingScore) {
+        mergedByKey[key] = item;
+      }
+    }
+
+    return mergedByKey.values.toList();
+  }
+
+  int _timelineMergeScore(Map<String, String> item) {
+    var score = 0;
+    final icon = item['icon'] ?? '';
+    final subtitle = item['subtitle'] ?? '';
+    final badge = item['badge'] ?? '';
+
+    if (icon.isNotEmpty && icon != 'default') {
+      score += 4;
+    }
+    if (badge.isNotEmpty) {
+      score += 3;
+    }
+    if (subtitle.isNotEmpty) {
+      score += 2;
+    }
+    if (subtitle.contains('[') && subtitle.contains(']')) {
+      score += 2;
+    }
+    if (subtitle.toLowerCase().contains('goal') ||
+        subtitle.toLowerCase().contains('card') ||
+        subtitle.toLowerCase().contains('penalty') ||
+        subtitle.toLowerCase().contains('review') ||
+        subtitle.toLowerCase().contains('pitch')) {
+      score += 2;
+    }
+
+    return score;
+  }
+
   List<Map<String, String>> _extractScoreboardTimeline(
     Map<String, dynamic> payload,
   ) {
+    final incsEvents = _extractTimelineFromIncs(payload);
+    if (incsEvents.isNotEmpty) {
+      return incsEvents;
+    }
+
     final candidates = <Map<String, dynamic>>[];
     _collectTimelineNodes(payload, candidates);
 
@@ -926,34 +1497,42 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
         'Tm',
         'tm',
       ], '');
-      final title = _readNestedDisplayValue(node, const [
-        'Nm',
-        'nm',
-        'name',
-        'PlayerName',
-        'playerName',
-        'Pnm',
-        'Title',
-        'title',
-      ], '');
+      final title = _buildTimelineTitle(node);
       final subtitle = _buildTimelineSubtitle(node);
 
-      if (minute.isEmpty || title.isEmpty) {
+      if (minute.isEmpty || (title.isEmpty && subtitle.isEmpty)) {
+        continue;
+      }
+
+      if (_looksLikeNumericTimelineTitle(title)) {
         continue;
       }
 
       final side = _inferTimelineSide(node);
-      final icon = _inferTimelineIcon(node, subtitle);
+      var icon = _inferTimelineIcon(node, subtitle);
+      
+      // Double-check for cards in title as well
+      if (icon == 'default') {
+        final titleLower = title.toLowerCase();
+        if (titleLower.contains('yellow') || titleLower.contains('yc')) {
+          icon = 'yellow';
+        } else if (titleLower.contains('red') || titleLower.contains('rc')) {
+          icon = 'red';
+        }
+      }
+      
+      final resolvedTitle = title.isEmpty ? subtitle : title;
+      final resolvedSubtitle = title.isEmpty ? '' : subtitle;
       final key =
-          '${minute.toLowerCase()}|${title.toLowerCase()}|${subtitle.toLowerCase()}|$side';
+          '${minute.toLowerCase()}|${resolvedTitle.toLowerCase()}|${resolvedSubtitle.toLowerCase()}|$side';
       if (!seen.add(key)) {
         continue;
       }
 
       items.add({
         'minute': minute,
-        'title': title,
-        'subtitle': subtitle,
+        'title': resolvedTitle,
+        'subtitle': resolvedSubtitle,
         'side': side,
         'icon': icon,
       });
@@ -966,6 +1545,660 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     );
 
     return items;
+  }
+
+  List<Map<String, String>> _decorateTimelineItems({
+    required List<Map<String, String>> items,
+    required Map<String, dynamic> scoreboard,
+    required Map<String, dynamic> detail,
+  }) {
+    final sorted = [...items]
+      ..sort(
+        (a, b) => _timelineMinuteSortValue(
+          b['minute'] ?? '',
+        ).compareTo(_timelineMinuteSortValue(a['minute'] ?? '')),
+      );
+
+    final firstHalf = <Map<String, String>>[];
+    final secondHalf = <Map<String, String>>[];
+
+    for (final item in sorted) {
+      final minuteValue = _timelineMinuteSortValue(item['minute'] ?? '');
+      if (minuteValue <= 4599) {
+        firstHalf.add(item);
+      } else {
+        secondHalf.add(item);
+      }
+    }
+
+    final decorated = <Map<String, String>>[];
+    final fullTimeLabel = _buildFullTimeTimelineLabel(detail, scoreboard);
+    if (fullTimeLabel.isNotEmpty) {
+      decorated.add({'kind': 'divider', 'label': fullTimeLabel});
+    }
+
+    decorated.addAll(secondHalf);
+
+    final halfTimeLabel = _buildHalfTimeTimelineLabel(detail, scoreboard, items);
+    if (halfTimeLabel.isNotEmpty && (firstHalf.isNotEmpty || secondHalf.isNotEmpty)) {
+      decorated.add({'kind': 'divider', 'label': halfTimeLabel});
+    }
+
+    decorated.addAll(firstHalf);
+    return decorated;
+  }
+
+  String _buildFullTimeTimelineLabel(
+    Map<String, dynamic> detail,
+    Map<String, dynamic> scoreboard,
+  ) {
+    final home = _firstNonEmpty([
+      _readNestedDisplayValue(scoreboard, const ['Tr1', 'tr1', 'T1Sc', 'm.Tr1'], ''),
+      _readNestedDisplayValue(detail, const ['m.Tr1', 'Tr1', 'homeScore'], ''),
+      widget.match.homeScore,
+    ]);
+    final away = _firstNonEmpty([
+      _readNestedDisplayValue(scoreboard, const ['Tr2', 'tr2', 'T2Sc', 'm.Tr2'], ''),
+      _readNestedDisplayValue(detail, const ['m.Tr2', 'Tr2', 'awayScore'], ''),
+      widget.match.awayScore,
+    ]);
+
+    if (home.isEmpty && away.isEmpty) {
+      return '';
+    }
+
+    return 'FT (${_displayScore(home)}-${_displayScore(away)})';
+  }
+
+  String _buildHalfTimeTimelineLabel(
+    Map<String, dynamic> detail,
+    Map<String, dynamic> scoreboard,
+    List<Map<String, String>> timelineItems,
+  ) {
+    final explicitHome = _firstNonEmpty([
+      _readNestedDisplayValue(scoreboard, const [
+        'Ht1',
+        'ht1',
+        'HT1',
+        'Ht.Tr1',
+        'ht.tr1',
+        'Scores.Ht1',
+      ], ''),
+      _readNestedDisplayValue(detail, const [
+        'm.Ht1',
+        'm.ht1',
+        'HT1',
+        'Ht1',
+        'Scores.Ht1',
+      ], ''),
+    ]);
+    final explicitAway = _firstNonEmpty([
+      _readNestedDisplayValue(scoreboard, const [
+        'Ht2',
+        'ht2',
+        'HT2',
+        'Ht.Tr2',
+        'ht.tr2',
+        'Scores.Ht2',
+      ], ''),
+      _readNestedDisplayValue(detail, const [
+        'm.Ht2',
+        'm.ht2',
+        'HT2',
+        'Ht2',
+        'Scores.Ht2',
+      ], ''),
+    ]);
+
+    if (explicitHome.isNotEmpty || explicitAway.isNotEmpty) {
+      return 'HT (${_displayScore(explicitHome)}-${_displayScore(explicitAway)})';
+    }
+
+    for (final item in timelineItems) {
+      final minuteValue = _timelineMinuteSortValue(item['minute'] ?? '');
+      if (minuteValue > 4599) {
+        continue;
+      }
+
+      final score = _extractScoreFromTimelineText(item['subtitle'] ?? '');
+      if (score != null) {
+        return 'HT (${score.$1}-${score.$2})';
+      }
+    }
+
+    return '';
+  }
+
+  (String, String)? _extractScoreFromTimelineText(String value) {
+    final match = RegExp(r'\[(\d+)-(\d+)\]').firstMatch(value);
+    if (match == null) {
+      return null;
+    }
+
+    return (match.group(1) ?? '', match.group(2) ?? '');
+  }
+
+  String _firstNonEmpty(List<String> values) {
+    for (final value in values) {
+      final trimmed = value.trim();
+      if (trimmed.isNotEmpty) {
+        return trimmed;
+      }
+    }
+    return '';
+  }
+
+  List<Map<String, String>> _extractTimelineFromIncs(
+    Map<String, dynamic> payload,
+  ) {
+    final incs = payload['Incs'];
+    if (incs is! Map) {
+      return const [];
+    }
+
+    final events = <Map<String, String>>[];
+
+    for (final entry in incs.entries) {
+      final key = entry.key.toString();
+
+      final eventList = entry.value;
+      if (eventList is! List) {
+        continue;
+      }
+
+      for (final rawEvent in eventList) {
+        if (rawEvent is! Map) {
+          continue;
+        }
+
+        final event = Map<String, dynamic>.from(rawEvent);
+        final minute = _formatTimelineMinute(
+          _asInt(event['Min']),
+          _asInt(event['MinEx']),
+        );
+        if (minute.isEmpty) {
+          continue;
+        }
+
+        final nestedIncs = event['Incs'] is List ? event['Incs'] as List : const [];
+        final nestedMaps = nestedIncs
+            .whereType<Map>()
+            .map((nested) => Map<String, dynamic>.from(nested))
+            .toList();
+        final primaryNode = _resolvePrimaryTimelineIncident(event, nestedMaps);
+        final side = _timelineSideFromWebIncs(primaryNode ?? event);
+        final scoreText = _timelineScoreText(event['Sc']);
+        String displayName = _timelinePersonName(primaryNode ?? event);
+        int incidentType = _resolveTimelineIncidentType(
+          event: event,
+          primaryNode: primaryNode,
+          nestedMaps: nestedMaps,
+          incidentBucketKey: key,
+        );
+
+        // Filter out penalty score events (bucket 4) only if they are not yellow/red cards
+        if (key == '4' && incidentType != 43 && incidentType != 44 && incidentType != 45) {
+          continue;
+        }
+
+        final assistPlayer = _resolveNestedIncidentByTypes(nestedMaps, const [63]);
+        final assistName = assistPlayer == null
+            ? ''
+            : _timelinePersonName(assistPlayer);
+
+        if (displayName.isEmpty) {
+          final namedNode = nestedMaps.firstWhere(
+            (item) => _timelinePersonName(item).isNotEmpty,
+            orElse: () => <String, dynamic>{},
+          );
+          if (namedNode.isNotEmpty) {
+            displayName = _timelinePersonName(namedNode);
+          }
+        }
+
+        if (displayName.isEmpty) {
+          displayName = 'Unknown Event';
+        }
+
+        final subtitle = _buildTimelineIncidentSubtitle(
+          incidentType: incidentType,
+          scoreText: scoreText,
+          event: event,
+          primaryNode: primaryNode,
+          assistName: assistName,
+        );
+
+        events.add({
+          'minute': minute,
+          'title': displayName,
+          'subtitle': subtitle,
+          'side': side,
+          'icon': _timelineIconFromIncidentType(incidentType),
+          'badge': _timelineBadgeLabel(
+            event: event,
+            primaryNode: primaryNode,
+            incidentType: incidentType,
+          ),
+          'sort': _timelineSortKey(
+            _asInt(event['Min']),
+            _asInt(event['MinEx']),
+          ).toString(),
+        });
+      }
+    }
+
+    events.sort((a, b) {
+      final aValue = int.tryParse(a['sort'] ?? '') ?? 0;
+      final bValue = int.tryParse(b['sort'] ?? '') ?? 0;
+      return aValue.compareTo(bValue);
+    });
+
+    return events
+        .map((event) => Map<String, String>.from(event)..remove('sort'))
+        .toList();
+  }
+
+  String _timelineSideFromWebIncs(Map<String, dynamic> event) {
+    final nm = _asInt(event['Nm']);
+    return nm == 2 ? 'home' : 'away';
+  }
+
+  Map<String, dynamic>? _resolvePrimaryTimelineIncident(
+    Map<String, dynamic> event,
+    List<Map<String, dynamic>> nestedMaps,
+  ) {
+    final preferred = _resolveNestedIncidentByTypes(
+      nestedMaps,
+      const [36, 37, 38, 39, 43, 44, 45, 47],
+    );
+    if (preferred != null) {
+      return preferred;
+    }
+
+    final withPerson = nestedMaps.firstWhere(
+      (item) => _timelinePersonName(item).isNotEmpty,
+      orElse: () => <String, dynamic>{},
+    );
+    if (withPerson.isNotEmpty) {
+      return withPerson;
+    }
+
+    return event;
+  }
+
+  Map<String, dynamic>? _resolveNestedIncidentByTypes(
+    List<Map<String, dynamic>> nestedMaps,
+    List<int> types,
+  ) {
+    for (final type in types) {
+      for (final nested in nestedMaps) {
+        if (_asInt(nested['IT']) == type) {
+          return nested;
+        }
+      }
+    }
+    return null;
+  }
+
+  int _resolveTimelineIncidentType({
+    required Map<String, dynamic> event,
+    Map<String, dynamic>? primaryNode,
+    required List<Map<String, dynamic>> nestedMaps,
+    required String incidentBucketKey,
+  }) {
+    final directTypes = <int>[
+      _asInt(event['IT']),
+      if (primaryNode != null) _asInt(primaryNode['IT']),
+      ...nestedMaps.map((item) => _asInt(item['IT'])),
+    ].where((type) => type > 0).toList();
+
+    for (final type in directTypes) {
+      if (_isSupportedTimelineIncidentType(type)) {
+        return type;
+      }
+    }
+
+    final combined = [
+      _readNestedDisplayValue(event, const [
+        'Txt',
+        'txt',
+        'Desc',
+        'desc',
+        'Detail',
+        'detail',
+        'Reason',
+        'reason',
+        'StatusText',
+        'statusText',
+      ], ''),
+      if (primaryNode != null)
+        _readNestedDisplayValue(primaryNode, const [
+          'Txt',
+          'txt',
+          'Desc',
+          'desc',
+          'Detail',
+          'detail',
+          'Reason',
+          'reason',
+          'StatusText',
+          'statusText',
+        ], ''),
+      ...nestedMaps.map(
+        (item) => _readNestedDisplayValue(item, const [
+          'Txt',
+          'txt',
+          'Desc',
+          'desc',
+          'Detail',
+          'detail',
+          'Reason',
+          'reason',
+          'StatusText',
+          'statusText',
+        ], ''),
+      ),
+    ].join(' ').toLowerCase();
+
+    if (combined.contains('second yellow') || combined.contains('second yellow card')) {
+      return 44;
+    }
+    if (combined.contains('yellow card') || 
+        combined.contains('yellow') ||
+        combined.contains('yc')) {
+      return 43;
+    }
+    if (combined.contains('red card') || 
+        combined.contains('red') ||
+        combined.contains('rc')) {
+      return 45;
+    }
+    if (combined.contains('missed penalty')) {
+      return 38;
+    }
+    if (combined.contains('own goal')) {
+      return 39;
+    }
+    if (combined.contains('penalty goal')) {
+      return 37;
+    }
+    if (combined.contains('goal')) {
+      return 36;
+    }
+
+    final bucketFallback = _timelineIncidentTypeFromBucket(incidentBucketKey);
+    if (bucketFallback != 0) {
+      return bucketFallback;
+    }
+
+    return _asInt((primaryNode ?? event)['IT']);
+  }
+
+  int _timelineIncidentTypeFromBucket(String bucketKey) {
+    switch (bucketKey) {
+      case '1':
+        return 36; // Goal
+      case '2':
+        return 43; // Yellow card
+      case '3':
+        return 45; // Red card
+      case '4':
+        return 43; // Mixed events including cards
+      case '5':
+        return 38; // Missed penalty
+      case '6':
+        return 39; // Own goal
+      case '7':
+        return 43; // Additional yellow card bucket
+      case '8':
+        return 44; // Second yellow
+      case '9':
+        return 49; // Additional red card type
+      default:
+        return 0;
+    }
+  }
+
+  bool _isSupportedTimelineIncidentType(int type) {
+    switch (type) {
+      case 36:
+      case 37:
+      case 38:
+      case 39:
+      case 43:
+      case 44:
+      case 45:
+      case 47:
+      case 46: // Additional card-related types
+      case 48:
+      case 49:
+      case 50:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  String _timelineScoreText(dynamic score) {
+    if (score is List && score.length >= 2) {
+      return '[${score[0]}-${score[1]}]';
+    }
+    return '';
+  }
+
+  String _timelinePersonName(Map<String, dynamic> node) {
+    final pn = (node['Pn'] ?? '').toString().trim();
+    if (pn.isNotEmpty) {
+      return pn;
+    }
+
+    final first = (node['Fn'] ?? '').toString().trim();
+    final last = (node['Ln'] ?? '').toString().trim();
+    final full = '$first $last'.trim();
+    if (full.isNotEmpty) {
+      return full;
+    }
+
+    return '';
+  }
+
+  String _timelineIncidentLabel(int type) {
+    switch (type) {
+      case 36:
+        return 'Goal';
+      case 37:
+        return 'Penalty Goal';
+      case 38:
+        return 'Missed Penalty';
+      case 39:
+        return 'Own Goal';
+      case 43:
+        return 'Yellow Card';
+      case 44:
+        return 'Second Yellow';
+      case 45:
+        return 'Red Card';
+      case 47:
+        return 'Goal ET';
+      default:
+        return 'Event';
+    }
+  }
+
+  String _buildTimelineIncidentSubtitle({
+    required int incidentType,
+    required String scoreText,
+    required Map<String, dynamic> event,
+    Map<String, dynamic>? primaryNode,
+    required String assistName,
+  }) {
+    final source = primaryNode ?? event;
+    final explicit = _readNestedDisplayValue(source, const [
+      'Txt',
+      'txt',
+      'Desc',
+      'desc',
+      'Detail',
+      'detail',
+      'Reason',
+      'reason',
+      'St',
+      'st',
+      'StatusText',
+      'statusText',
+    ], '');
+
+    final normalizedExplicit = explicit.toLowerCase();
+    if (normalizedExplicit.contains('var') ||
+        normalizedExplicit.contains('review') ||
+        normalizedExplicit.contains('not on pitch')) {
+      return explicit;
+    }
+
+    if (assistName.trim().isNotEmpty &&
+        (incidentType == 36 || incidentType == 37 || incidentType == 47)) {
+      return assistName.trim();
+    }
+
+    final fallbackLabel = _timelineIncidentLabel(incidentType);
+    if (scoreText.isNotEmpty &&
+        (incidentType == 36 || incidentType == 37 || incidentType == 39 || incidentType == 47)) {
+      return '$fallbackLabel $scoreText';
+    }
+
+    if (incidentType == 43 || incidentType == 44 || incidentType == 45) {
+      return explicit;
+    }
+
+    if (explicit.isNotEmpty) {
+      return explicit;
+    }
+
+    return fallbackLabel;
+  }
+
+  String _timelineBadgeLabel({
+    required Map<String, dynamic> event,
+    Map<String, dynamic>? primaryNode,
+    required int incidentType,
+  }) {
+    final combined = [
+      _readNestedDisplayValue(event, const [
+        'Txt',
+        'txt',
+        'Desc',
+        'desc',
+        'Detail',
+        'detail',
+        'StatusText',
+        'statusText',
+      ], ''),
+      if (primaryNode != null)
+        _readNestedDisplayValue(primaryNode, const [
+          'Txt',
+          'txt',
+          'Desc',
+          'desc',
+          'Detail',
+          'detail',
+          'StatusText',
+          'statusText',
+        ], ''),
+    ].join(' ').toLowerCase();
+
+    if (combined.contains('var') || combined.contains('review')) {
+      return 'VAR';
+    }
+
+    if (incidentType == 38) {
+      return 'MISS';
+    }
+
+    return '';
+  }
+
+  String _timelineIconFromIncidentType(int type) {
+    switch (type) {
+      case 36:
+        return 'goal';
+      case 37:
+        return 'penalty_goal';
+      case 38:
+        return 'missed_penalty';
+      case 39:
+        return 'own_goal';
+      case 43:
+      case 44:
+      case 46:
+      case 48:
+        return 'yellow';
+      case 45:
+      case 49:
+      case 50:
+        return 'red';
+      case 47:
+        return 'goal';
+      default:
+        return 'default';
+    }
+  }
+
+  Color _timelineIconColor(String iconType, Color accentColor) {
+    switch (iconType) {
+      case 'goal':
+        return const Color(0xFF22C55E);
+      case 'penalty_goal':
+        return const Color(0xFF15803D);
+      case 'missed_penalty':
+        return const Color(0xFFEF4444);
+      case 'own_goal':
+        return const Color(0xFFDC2626);
+      case 'yellow':
+        return const Color(0xFFFACC15);
+      case 'red':
+        return const Color(0xFFEF4444);
+      default:
+        return accentColor;
+    }
+  }
+
+  String _timelineIconSymbol(String iconType) {
+    switch (iconType) {
+      case 'goal':
+        return '⚽';
+      case 'penalty_goal':
+        return '⚽P';
+      case 'missed_penalty':
+        return '✖P';
+      case 'own_goal':
+        return 'OG';
+      case 'yellow':
+      case 'red':
+        return '█';
+      default:
+        return '';
+    }
+  }
+
+  String _formatTimelineMinute(int minute, int minuteExtra) {
+    if (minute <= 0 && minuteExtra <= 0) {
+      return '';
+    }
+    if (minuteExtra > 0) {
+      return '$minute+$minuteExtra\'';
+    }
+    return '$minute\'';
+  }
+
+  int _timelineSortKey(int minute, int minuteExtra) {
+    return (minute * 100) + minuteExtra;
+  }
+
+  int _asInt(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 
   void _collectTimelineNodes(
@@ -1001,24 +2234,75 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       'Tm',
       'tm',
     ], '');
-    final title = _readNestedDisplayValue(node, const [
-      'Nm',
-      'nm',
-      'name',
+    final title = _buildTimelineTitle(node);
+    final subtitle = _buildTimelineSubtitle(node);
+
+    return minute.isNotEmpty && (title.isNotEmpty || subtitle.isNotEmpty);
+  }
+
+  String _buildTimelineTitle(Map<String, dynamic> node) {
+    final playerName = _readNestedDisplayValue(node, const [
+      'Pn',
+      'pn',
       'PlayerName',
       'playerName',
       'Pnm',
+      'name',
+      'Player.Nm',
+      'Player.Pn',
+      'Player.name',
+      'Person.Pn',
+      'Person.name',
+    ], '');
+    if (playerName.isNotEmpty) {
+      return playerName;
+    }
+
+    final first = _readNestedDisplayValue(node, const ['Fn', 'fn'], '');
+    final last = _readNestedDisplayValue(node, const ['Ln', 'ln'], '');
+    final fullName = '$first $last'.trim();
+    if (fullName.isNotEmpty) {
+      return fullName;
+    }
+
+    return _readNestedDisplayValue(node, const [
       'Title',
       'title',
+      'Text',
+      'text',
+      'Event',
+      'event',
+      'TypeNm',
+      'typeName',
+      'IncidentType',
+      'incidentType',
+      'Type',
+      'type',
+      'Desc',
+      'desc',
+      'Detail',
+      'detail',
+      'Reason',
+      'reason',
+      'StatusText',
+      'statusText',
     ], '');
+  }
 
-    return minute.isNotEmpty && title.isNotEmpty;
+  bool _looksLikeNumericTimelineTitle(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      return false;
+    }
+    return int.tryParse(trimmed) != null;
   }
 
   String _buildTimelineSubtitle(Map<String, dynamic> node) {
     final primary = _readNestedDisplayValue(node, const [
       'Desc',
       'desc',
+      'Text',
+      'text',
       'Type',
       'type',
       'TypeNm',
@@ -1027,6 +2311,18 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       'incidentType',
       'Detail',
       'detail',
+      'Reason',
+      'reason',
+      'StatusText',
+      'statusText',
+    ], '');
+    final team = _readNestedDisplayValue(node, const [
+      'Tnm',
+      'tnm',
+      'TeamName',
+      'teamName',
+      'CompetitorName',
+      'competitorName',
     ], '');
     final score = _readNestedDisplayValue(node, const [
       'Score',
@@ -1037,15 +2333,20 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       'result',
     ], '');
 
-    if (primary.isEmpty) {
-      return score;
+    final parts = <String>[];
+    if (primary.isNotEmpty) {
+      parts.add(primary);
+    }
+    if (team.isNotEmpty &&
+        !parts.any((part) => part.toLowerCase().contains(team.toLowerCase()))) {
+      parts.add(team);
+    }
+    if (score.isNotEmpty &&
+        !parts.any((part) => part.toLowerCase().contains(score.toLowerCase()))) {
+      parts.add(score);
     }
 
-    if (score.isEmpty || primary.contains(score)) {
-      return primary;
-    }
-
-    return '$primary ($score)';
+    return parts.join(' • ');
   }
 
   String _inferTimelineSide(Map<String, dynamic> node) {
@@ -1058,16 +2359,28 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       'team',
       'Competitor',
       'competitor',
+      'CompetitorName',
+      'competitorName',
+      'TeamName',
+      'teamName',
+      'Tnm',
+      'tnm',
       'Tid',
       'tid',
     ], '').toLowerCase();
 
     if (raw.contains('home') ||
+        raw == 'h' ||
+        raw == 'hometeam' ||
+        raw == 'local' ||
         raw == '1' ||
         raw == widget.match.homeTeamId.toLowerCase()) {
       return 'home';
     }
     if (raw.contains('away') ||
+        raw == 'a' ||
+        raw == 'awayteam' ||
+        raw == 'visitor' ||
         raw == '2' ||
         raw == widget.match.awayTeamId.toLowerCase()) {
       return 'away';
@@ -1083,27 +2396,63 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
   }
 
   String _inferTimelineIcon(Map<String, dynamic> node, String subtitle) {
-    final combined =
-        (subtitle +
-                ' ' +
-                _readNestedDisplayValue(node, const [
-                  'Type',
-                  'type',
-                  'IncidentType',
-                  'incidentType',
-                  'Desc',
-                  'desc',
-                ], ''))
-            .toLowerCase();
+    // Build comprehensive search string from all possible card indicator fields
+    final fieldsList = [
+      subtitle,
+      _readNestedDisplayValue(node, const [
+        'Type',
+        'type',
+        'IncidentType',
+        'incidentType',
+        'Desc',
+        'desc',
+        'Txt',
+        'txt',
+        'Text',
+        'text',
+        'TypeName',
+        'typeName',
+        'TypeNm',
+        'typeNm',
+        'CardType',
+        'cardType',
+        'Card',
+        'card',
+        'Period',
+        'period',
+        'Label',
+        'label',
+      ], ''),
+    ];
+    
+    final combined = fieldsList.join(' ').toLowerCase();
 
-    if (combined.contains('red')) {
-      return 'red';
-    }
-    if (combined.contains('yellow')) {
+    // Check for cards FIRST before other events
+    if (combined.contains('second yellow') || combined.contains('second yellow card')) {
       return 'yellow';
     }
-    if (combined.contains('penalty')) {
-      return 'penalty';
+    if (combined.contains('yellow card') || 
+        combined.contains('yellow') ||
+        combined.contains('yc') ||
+        combined.contains('card 2')) {
+      return 'yellow';
+    }
+    if (combined.contains('red card') || 
+        combined.contains('red') ||
+        combined.contains('rc') ||
+        combined.contains('card 1')) {
+      return 'red';
+    }
+    
+    // Then check for other event types
+    if (combined.contains('missed penalty')) {
+      return 'missed_penalty';
+    }
+    if (combined.contains('own goal')) {
+      return 'own_goal';
+    }
+    if (combined.contains('penalty goal') || combined.contains('penalty')) {
+      return 'penalty_goal';
     }
     if (combined.contains('goal')) {
       return 'goal';
@@ -3421,7 +4770,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                 children: [
                   _buildTableHeaderRow(),
                   Divider(color: Colors.white.withOpacity(0.08), height: 1),
-                  ...rows.take(20).map(_buildLeagueRow),
+                  ...rows.map(_buildLeagueRow),
                 ],
               ),
             ),
@@ -3491,7 +4840,6 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
 
     return Column(
       children: matches
-          .take(8)
           .map(
             (match) => Padding(
               padding: const EdgeInsets.only(bottom: 12),

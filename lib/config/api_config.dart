@@ -18,7 +18,7 @@ class ApiConfig {
 
   static const String liveScoreApiKey = String.fromEnvironment(
     'LIVE_SCORE_API_KEY',
-    defaultValue: '5ee39eebe6mshad9b219b003338fp1c6351jsn1a2f221efa51',
+    defaultValue: '7a1388ff13msh64d06ac50d5a0cfp1e3d48jsnd37d68218ff7',
   );
 
   static const String liveScoreApiHost = String.fromEnvironment(
