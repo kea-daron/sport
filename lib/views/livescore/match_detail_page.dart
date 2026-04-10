@@ -485,50 +485,8 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 18,
-                              vertical: 16,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.025),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.07),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                const Expanded(
-                                  child: Text(
-                                    'Timeline',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  width: 54,
-                                  height: 54,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.05),
-                                    borderRadius: BorderRadius.circular(18),
-                                    border: Border.all(
-                                      color: Colors.white.withOpacity(0.05),
-                                    ),
-                                  ),
-                                  child: Icon(
-                                    Icons.open_in_full_rounded,
-                                    color: Colors.white.withOpacity(0.82),
-                                    size: 20,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 20),
+                          
+                          const SizedBox(height: 5),
                           ...timelineItems.map((item) {
                             if (item['kind'] == 'divider') {
                               return _buildTimelineDividerRow(item['label'] ?? '');
@@ -540,8 +498,8 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                             final isNeutral = !isHome && !isAway;
 
                             return Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                             
+                              padding: const EdgeInsets.symmetric(vertical: 10),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
@@ -556,7 +514,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                                         ? _buildTimelineSide(
                                             item,
                                             alignEnd: true,
-                                            accentColor: Colors.white70,
+                                            accentColor: const Color.fromARGB(179, 132, 130, 130),
                                           )
                                         : const SizedBox.shrink(),
                                   ),
@@ -565,19 +523,6 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                                       horizontal: 10,
                                     ),
                                     child: _buildTimelineMinuteChip(item),
-                                  ),
-                                  Expanded(
-                                    child: isAway
-                                        ? _buildTimelineSide(
-                                            item,
-                                            alignEnd: false,
-                                            accentColor: Colors.blue.shade300,
-                                          )
-                                        : isNeutral
-                                        ? const SizedBox(
-                                            width: double.infinity,
-                                          )
-                                        : const SizedBox.shrink(),
                                   ),
                                 ],
                               ),
@@ -1195,6 +1140,52 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     return rows.take(12).toList();
   }
 
+  List<Map<String, dynamic>> _extractStatisticsTeamStatNodes(
+    Map<String, dynamic> statistics,
+  ) {
+    final statList = <Map<String, dynamic>>[];
+    if (statistics['Stat'] is List<dynamic>) {
+      statList.addAll(
+        (statistics['Stat'] as List<dynamic>).whereType<Map<String, dynamic>>(),
+      );
+    } else if (statistics['Stats'] is List<dynamic>) {
+      statList.addAll(
+        (statistics['Stats'] as List<dynamic>)
+            .whereType<Map<String, dynamic>>(),
+      );
+    } else if (statistics['stats'] is List<dynamic>) {
+      statList.addAll(
+        (statistics['stats'] as List<dynamic>)
+            .whereType<Map<String, dynamic>>(),
+      );
+    } else if (statistics['statistics'] is List<dynamic>) {
+      statList.addAll(
+        (statistics['statistics'] as List<dynamic>)
+            .whereType<Map<String, dynamic>>(),
+      );
+    }
+
+    if (statList.length < 2 && statistics['teams'] is Map<String, dynamic>) {
+      final teams = statistics['teams'] as Map<String, dynamic>;
+      for (final teamData in teams.values.whereType<Map<String, dynamic>>()) {
+        if (teamData['statistics'] is Map<String, dynamic>) {
+          statList.add(
+            Map<String, dynamic>.from(
+              teamData['statistics'] as Map<String, dynamic>,
+            ),
+          );
+        } else if (teamData['statistics'] is List<dynamic>) {
+          statList.addAll(
+            (teamData['statistics'] as List<dynamic>)
+                .whereType<Map<String, dynamic>>(),
+          );
+        }
+      }
+    }
+
+    return statList;
+  }
+
   List<Map<String, String>> _extractDetailSummaryRows(
     Map<String, dynamic> detail,
   ) {
@@ -1476,15 +1467,21 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     Map<String, dynamic> payload,
   ) {
     final incsEvents = _extractTimelineFromIncs(payload);
-    if (incsEvents.isNotEmpty) {
-      return incsEvents;
-    }
-
     final candidates = <Map<String, dynamic>>[];
     _collectTimelineNodes(payload, candidates);
 
     final seen = <String>{};
-    final items = <Map<String, String>>[];
+    final items = <Map<String, String>>[...incsEvents];
+
+    for (final event in incsEvents) {
+      final key = [
+        event['minute'] ?? '',
+        event['title'] ?? '',
+        event['subtitle'] ?? '',
+        event['side'] ?? '',
+      ].join('|').toLowerCase();
+      seen.add(key);
+    }
 
     for (final node in candidates) {
       final minute = _readNestedDisplayValue(node, const [
@@ -1840,6 +1837,59 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     return null;
   }
 
+  int _incidentTypeFromIcon(String icon) {
+    switch (icon) {
+      case 'yellow':
+        return 43;
+      case 'red':
+        return 45;
+      case 'goal':
+        return 36;
+      case 'penalty_goal':
+        return 37;
+      case 'missed_penalty':
+        return 38;
+      case 'own_goal':
+        return 39;
+      default:
+        return 0;
+    }
+  }
+
+  int _resolveTimelineIncidentTypeByIconHeuristics(
+    List<Map<String, dynamic>> nodes,
+  ) {
+    for (final node in nodes) {
+      final subtitle = _readNestedDisplayValue(node, const [
+        'Txt',
+        'txt',
+        'Desc',
+        'desc',
+        'Detail',
+        'detail',
+        'Reason',
+        'reason',
+        'StatusText',
+        'statusText',
+        'TypeName',
+        'typeName',
+        'TypeNm',
+        'typeNm',
+        'CardType',
+        'cardType',
+        'Card',
+        'card',
+      ], '');
+      final icon = _inferTimelineIcon(node, subtitle);
+      final type = _incidentTypeFromIcon(icon);
+      if (type != 0) {
+        return type;
+      }
+    }
+
+    return 0;
+  }
+
   int _resolveTimelineIncidentType({
     required Map<String, dynamic> event,
     Map<String, dynamic>? primaryNode,
@@ -1926,6 +1976,15 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       return 36;
     }
 
+    final iconHeuristicType = _resolveTimelineIncidentTypeByIconHeuristics([
+      event,
+      if (primaryNode != null) primaryNode,
+      ...nestedMaps,
+    ]);
+    if (iconHeuristicType != 0) {
+      return iconHeuristicType;
+    }
+
     final bucketFallback = _timelineIncidentTypeFromBucket(incidentBucketKey);
     if (bucketFallback != 0) {
       return bucketFallback;
@@ -1987,19 +2046,27 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
   }
 
   String _timelinePersonName(Map<String, dynamic> node) {
-    final pn = (node['Pn'] ?? '').toString().trim();
-    if (pn.isNotEmpty) {
-      return pn;
-    }
+    return _readNestedDisplayValue(node, const [
+      'Pn',
+      'pn',
+      'PlayerName',
+      'playerName',
+      'Pnm',
+      'name',
+      'Nm',
+      'nm',
+      'Player.Nm',
+      'Player.Pn',
+      'Player.name',
+      'Person.Pn',
+      'Person.name',
+    ], _fullTimelinePersonName(node));
+  }
 
+  String _fullTimelinePersonName(Map<String, dynamic> node) {
     final first = (node['Fn'] ?? '').toString().trim();
     final last = (node['Ln'] ?? '').toString().trim();
-    final full = '$first $last'.trim();
-    if (full.isNotEmpty) {
-      return full;
-    }
-
-    return '';
+    return '$first $last'.trim();
   }
 
   String _timelineIncidentLabel(int type) {
@@ -3812,46 +3879,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       'Ofs': 'Offsides',
     };
 
-    final statList = <Map<String, dynamic>>[];
-    if (statistics['Stat'] is List<dynamic>) {
-      statList.addAll(
-        (statistics['Stat'] as List<dynamic>).whereType<Map<String, dynamic>>(),
-      );
-    } else if (statistics['Stats'] is List<dynamic>) {
-      statList.addAll(
-        (statistics['Stats'] as List<dynamic>)
-            .whereType<Map<String, dynamic>>(),
-      );
-    } else if (statistics['stats'] is List<dynamic>) {
-      statList.addAll(
-        (statistics['stats'] as List<dynamic>)
-            .whereType<Map<String, dynamic>>(),
-      );
-    } else if (statistics['statistics'] is List<dynamic>) {
-      statList.addAll(
-        (statistics['statistics'] as List<dynamic>)
-            .whereType<Map<String, dynamic>>(),
-      );
-    }
-
-    if (statList.length < 2 && statistics['teams'] is Map<String, dynamic>) {
-      final teams = statistics['teams'] as Map<String, dynamic>;
-      for (final teamData in teams.values.whereType<Map<String, dynamic>>()) {
-        if (teamData['statistics'] is Map<String, dynamic>) {
-          statList.add(
-            Map<String, dynamic>.from(
-              teamData['statistics'] as Map<String, dynamic>,
-            ),
-          );
-        } else if (teamData['statistics'] is List<dynamic>) {
-          statList.addAll(
-            (teamData['statistics'] as List<dynamic>)
-                .whereType<Map<String, dynamic>>(),
-          );
-        }
-      }
-    }
-
+    final statList = _extractStatisticsTeamStatNodes(statistics);
     if (statList.length < 2) {
       return const [];
     }
