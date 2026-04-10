@@ -634,43 +634,37 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
 
     return Padding(
       padding: EdgeInsets.only(left: alignEnd ? 0 : 8, right: alignEnd ? 8 : 0),
-      child: Column(
-        crossAxisAlignment: alignEnd
-            ? CrossAxisAlignment.end
-            : CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: alignEnd
-                ? [
-                    Flexible(
-                      child: _buildTimelineTextBlock(
-                        nameParts: nameParts,
-                        subtitle: subtitle,
-                        alignEnd: true,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    _buildTimelineEventMarker(item, accentColor),
-                    const SizedBox(width: 8),
-                    Expanded(child: _buildTimelineConnector()),
-                  ]
-                : [
-                    Expanded(child: _buildTimelineConnector()),
-                    const SizedBox(width: 8),
-                    _buildTimelineEventMarker(item, accentColor),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: _buildTimelineTextBlock(
-                        nameParts: nameParts,
-                        subtitle: subtitle,
-                        alignEnd: false,
-                      ),
-                    ),
-                  ],
-          ),
-        ],
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: alignEnd
+            ? [
+                Flexible(
+                  flex: 6,
+                  child: _buildTimelineTextBlock(
+                    nameParts: nameParts,
+                    subtitle: subtitle,
+                    alignEnd: true,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _buildTimelineEventMarker(item, accentColor),
+                const SizedBox(width: 12),
+                Expanded(child: _buildTimelineConnector()),
+              ]
+            : [
+                Expanded(child: _buildTimelineConnector()),
+                const SizedBox(width: 12),
+                _buildTimelineEventMarker(item, accentColor),
+                const SizedBox(width: 8),
+                Flexible(
+                  flex: 6,
+                  child: _buildTimelineTextBlock(
+                    nameParts: nameParts,
+                    subtitle: subtitle,
+                    alignEnd: false,
+                  ),
+                ),
+              ],
       ),
     );
   }
@@ -683,6 +677,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     return Column(
       crossAxisAlignment:
           alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           nameParts.$1,
@@ -794,8 +789,8 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.transparent,
-            Colors.white.withOpacity(0.12),
+            const Color.fromARGB(0, 230, 0, 0),
+            Colors.white.withOpacity(0.14),
             Colors.transparent,
           ],
         ),
@@ -857,19 +852,19 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
 
     if (iconType == 'goal' || iconType == 'penalty_goal') {
       return Container(
-        width: 26,
-        height: 26,
+        width: 28,
+        height: 28,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Colors.white.withOpacity(0.22),
-              Colors.white.withOpacity(0.08),
+              Colors.white.withOpacity(0.24),
+              Colors.white.withOpacity(0.1),
             ],
           ),
-          border: Border.all(color: Colors.white.withOpacity(0.18)),
+          border: Border.all(color: Colors.white.withOpacity(0.2)),
           boxShadow: [
             BoxShadow(
               color: color.withOpacity(0.22),
@@ -880,69 +875,49 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
         ),
         alignment: Alignment.center,
         child: Container(
-          width: 18,
-          height: 18,
+          width: 19,
+          height: 19,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: Colors.white,
             border: Border.all(color: const Color(0xFF111111), width: 1.1),
           ),
           alignment: Alignment.center,
-          child: Icon(Icons.sports_soccer, size: 11, color: const Color(0xFF111111)),
+          child: Icon(
+            Icons.sports_soccer,
+            size: 11,
+            color: const Color(0xFF111111),
+          ),
         ),
       );
     }
 
     if (iconType == 'yellow' || iconType == 'red') {
-      return Container(
-        width: 26,
-        height: 26,
-        alignment: Alignment.center,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Positioned(
-              top: 4,
-              left: 6,
-              child: Transform.rotate(
-                angle: -0.12,
-                child: Container(
-                  width: 11,
-                  height: 15,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.18),
-                    borderRadius: BorderRadius.circular(3),
-                    border: Border.all(color: Colors.white.withOpacity(0.08)),
-                  ),
+      return SizedBox(
+        width: 28,
+        height: 28,
+        child: Center(
+          child: Transform.rotate(
+            angle: 0.02,
+            child: Container(
+              width: 13,
+              height: 18,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(3),
+                border: Border.all(
+                  color: Colors.black.withOpacity(0.22),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withOpacity(0.28),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
             ),
-            Positioned(
-              top: 3,
-              left: 9,
-              child: Transform.rotate(
-                angle: 0.08,
-                child: Container(
-                  width: 11,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(3),
-                    border: Border.all(
-                      color: Colors.black.withOpacity(0.18),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withOpacity(0.26),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       );
     }
@@ -1400,10 +1375,43 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     ]);
 
     return _decorateTimelineItems(
-      items: mergedTimeline,
+      items: _filterPrimaryTimelineItems(mergedTimeline),
       scoreboard: scoreboard,
       detail: detail,
     );
+  }
+
+  List<Map<String, String>> _filterPrimaryTimelineItems(
+    List<Map<String, String>> items,
+  ) {
+    return items.where((item) {
+      final icon = (item['icon'] ?? '').trim();
+      final badge = (item['badge'] ?? '').trim();
+      final subtitle = (item['subtitle'] ?? '').toLowerCase();
+
+      if (badge.isNotEmpty) {
+        return true;
+      }
+
+      if (icon == 'goal' ||
+          icon == 'penalty_goal' ||
+          icon == 'yellow' ||
+          icon == 'red' ||
+          icon == 'missed_penalty' ||
+          icon == 'own_goal') {
+        return true;
+      }
+
+      if (subtitle.contains('goal') ||
+          subtitle.contains('card') ||
+          subtitle.contains('penalty') ||
+          subtitle.contains('review') ||
+          subtitle.contains('var')) {
+        return true;
+      }
+
+      return false;
+    }).toList();
   }
 
   List<Map<String, String>> _mergeTimelineItems(
@@ -1412,11 +1420,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     final mergedByKey = <String, Map<String, String>>{};
 
     for (final item in items) {
-      final key = [
-        item['minute'] ?? '',
-        item['title'] ?? '',
-        item['side'] ?? '',
-      ].join('|').toLowerCase();
+      final key = _timelineCanonicalKey(item);
 
       final existing = mergedByKey[key];
       if (existing == null) {
@@ -1432,6 +1436,24 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     }
 
     return mergedByKey.values.toList();
+  }
+
+  String _timelineCanonicalKey(Map<String, String> item) {
+    String normalize(String value) {
+      final lower = value.toLowerCase().trim();
+      return lower.replaceAll(RegExp(r'\s+'), ' ');
+    }
+
+    final minute = normalize(item['minute'] ?? '');
+    final side = normalize(item['side'] ?? '');
+    final icon = normalize(item['icon'] ?? '');
+    final title = normalize(item['title'] ?? '');
+    final subtitle = normalize(item['subtitle'] ?? '');
+    final titleParts = _splitTimelineDisplayName(title);
+    final subtitleParts = _splitTimelineDisplayName(subtitle);
+    final person = normalize(titleParts.$1.isNotEmpty ? titleParts.$1 : subtitleParts.$1);
+
+    return [minute, person, side, icon].join('|');
   }
 
   int _timelineMergeScore(Map<String, String> item) {
@@ -1474,12 +1496,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     final items = <Map<String, String>>[...incsEvents];
 
     for (final event in incsEvents) {
-      final key = [
-        event['minute'] ?? '',
-        event['title'] ?? '',
-        event['subtitle'] ?? '',
-        event['side'] ?? '',
-      ].join('|').toLowerCase();
+      final key = _timelineCanonicalKey(event);
       seen.add(key);
     }
 
@@ -1520,8 +1537,13 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
       
       final resolvedTitle = title.isEmpty ? subtitle : title;
       final resolvedSubtitle = title.isEmpty ? '' : subtitle;
-      final key =
-          '${minute.toLowerCase()}|${resolvedTitle.toLowerCase()}|${resolvedSubtitle.toLowerCase()}|$side';
+      final key = _timelineCanonicalKey({
+        'minute': minute,
+        'title': resolvedTitle,
+        'subtitle': resolvedSubtitle,
+        'side': side,
+        'icon': icon,
+      });
       if (!seen.add(key)) {
         continue;
       }
@@ -1688,7 +1710,7 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
   List<Map<String, String>> _extractTimelineFromIncs(
     Map<String, dynamic> payload,
   ) {
-    final incs = payload['Incs'];
+    final incs = payload['Incs'] ?? payload['Incs-s'];
     if (incs is! Map) {
       return const [];
     }
