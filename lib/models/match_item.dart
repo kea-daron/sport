@@ -11,6 +11,8 @@ class MatchItem {
   final String awayTeamImage;
   final String homeScore;
   final String awayScore;
+  final int homeRedCards;
+  final int awayRedCards;
   final String status;
   final DateTime? startTime;
 
@@ -27,6 +29,8 @@ class MatchItem {
     required this.awayTeamImage,
     required this.homeScore,
     required this.awayScore,
+    this.homeRedCards = 0,
+    this.awayRedCards = 0,
     required this.status,
     required this.startTime,
   });

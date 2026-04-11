@@ -61,6 +61,8 @@ class SearchResult {
       awayTeamImage: '',
       homeScore: homeScore,
       awayScore: awayScore,
+      homeRedCards: 0,
+      awayRedCards: 0,
       status: status,
       startTime: startTime,
     );

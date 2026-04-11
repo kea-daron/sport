@@ -631,12 +631,14 @@ class _HomePageState extends State<HomePage> {
                 _buildTeamRow(
                   teamName: match.homeTeam,
                   teamImage: match.homeTeamImage,
+                  redCards: match.homeRedCards,
                   score: showScores ? match.homeScore : _scheduledTime(match),
                 ),
                 const SizedBox(height: 6),
                 _buildTeamRow(
                   teamName: match.awayTeam,
                   teamImage: match.awayTeamImage,
+                  redCards: match.awayRedCards,
                   score: showScores ? match.awayScore : '',
                 ),
               ],
@@ -652,6 +654,7 @@ class _HomePageState extends State<HomePage> {
   Widget _buildTeamRow({
     required String teamName,
     required String teamImage,
+    required int redCards,
     required String score,
   }) {
     return Row(
@@ -659,13 +662,26 @@ class _HomePageState extends State<HomePage> {
         _buildTeamBadge(teamName: teamName, teamImage: teamImage),
         const SizedBox(width: 6),
         Expanded(
-          child: Text(
-            teamName,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  teamName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              if (redCards > 0) ...[
+                const SizedBox(width: 6),
+                _buildRedCardBadge(redCards),
+              ],
+            ],
           ),
         ),
         if (score.isNotEmpty)
@@ -678,6 +694,29 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildRedCardBadge(int count) {
+    return Container(
+      width: count > 1 ? 16 : 12,
+      height: 24,
+      decoration: BoxDecoration(
+        color: const Color(0xFFE91E63),
+        borderRadius: BorderRadius.circular(3),
+      ),
+      alignment: Alignment.center,
+      child: count > 1
+          ? Text(
+              '$count',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 8,
+                fontWeight: FontWeight.w800,
+                height: 1,
+              ),
+            )
+          : null,
     );
   }
 

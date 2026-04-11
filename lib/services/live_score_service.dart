@@ -1964,6 +1964,38 @@ class LiveScoreService {
       'awayScore',
       'away_score',
     ], fallback: '');
+    final homeRedCards = _readInt(event, const [
+      'T1.0.YRcs',
+      'T1.0.yrCs',
+      'T1.0.RCs',
+      'T1.0.rcs',
+      'T1.0.RC',
+      'T1.0.rc',
+      'T1.0.RedCards',
+      'T1.0.redCards',
+      'T1.0.Cards.Red',
+      'T1.0.cards.red',
+      'T1RC',
+      't1rc',
+      'homeRedCards',
+      'home_red_cards',
+    ], fallback: 0);
+    final awayRedCards = _readInt(event, const [
+      'T2.0.YRcs',
+      'T2.0.yrCs',
+      'T2.0.RCs',
+      'T2.0.rcs',
+      'T2.0.RC',
+      'T2.0.rc',
+      'T2.0.RedCards',
+      'T2.0.redCards',
+      'T2.0.Cards.Red',
+      'T2.0.cards.red',
+      'T2RC',
+      't2rc',
+      'awayRedCards',
+      'away_red_cards',
+    ], fallback: 0);
 
     final status = _readString(event, const [
       'Eps',
@@ -1985,6 +2017,8 @@ class LiveScoreService {
       awayTeamImage: awayTeamImage,
       homeScore: homeScore,
       awayScore: awayScore,
+      homeRedCards: homeRedCards,
+      awayRedCards: awayRedCards,
       status: status,
       startTime: _parseEsd(event['Esd']),
     );
@@ -2293,6 +2327,30 @@ class LiveScoreService {
 
       if (value is num) {
         return value.toString();
+      }
+    }
+
+    return fallback;
+  }
+
+  int _readInt(
+    Map<String, dynamic> source,
+    List<String> paths, {
+    int fallback = 0,
+  }) {
+    for (final path in paths) {
+      final value = _readPath(source, path);
+      if (value == null) {
+        continue;
+      }
+
+      if (value is num) {
+        return value.toInt();
+      }
+
+      final parsed = int.tryParse(value.toString().trim());
+      if (parsed != null) {
+        return parsed;
       }
     }
 
