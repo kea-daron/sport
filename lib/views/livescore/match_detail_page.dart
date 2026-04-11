@@ -498,7 +498,6 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                             final isNeutral = !isHome && !isAway;
 
                             return Container(
-                             
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -514,7 +513,12 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                                         ? _buildTimelineSide(
                                             item,
                                             alignEnd: true,
-                                            accentColor: const Color.fromARGB(179, 132, 130, 130),
+                                            accentColor: const Color.fromARGB(
+                                              179,
+                                              132,
+                                              130,
+                                              130,
+                                            ),
                                           )
                                         : const SizedBox.shrink(),
                                   ),
@@ -523,6 +527,15 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
                                       horizontal: 10,
                                     ),
                                     child: _buildTimelineMinuteChip(item),
+                                  ),
+                                  Expanded(
+                                    child: isAway
+                                        ? _buildTimelineSide(
+                                            item,
+                                            alignEnd: false,
+                                            accentColor: Colors.blue.shade300,
+                                          )
+                                        : const SizedBox.shrink(),
                                   ),
                                 ],
                               ),
@@ -1818,8 +1831,20 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
   }
 
   String _timelineSideFromWebIncs(Map<String, dynamic> event) {
+    final inferred = _inferTimelineSide(event);
+    if (inferred != 'neutral') {
+      return inferred;
+    }
+
     final nm = _asInt(event['Nm']);
-    return nm == 2 ? 'home' : 'away';
+    if (nm == 1) {
+      return 'home';
+    }
+    if (nm == 2) {
+      return 'away';
+    }
+
+    return 'neutral';
   }
 
   Map<String, dynamic>? _resolvePrimaryTimelineIncident(
