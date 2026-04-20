@@ -265,6 +265,46 @@ class LiveScoreService {
     return options;
   }
 
+  Future<Map<String, dynamic>> fetchIncidents({
+    required String eid,
+    required String category,
+  }) async {
+    final cacheKey = 'match_incidents_${eid}_$category';
+    final cached = _cache.get<Map<String, dynamic>>(cacheKey);
+    if (cached != null) return cached;
+
+    final uri = Uri.parse(
+      '${ApiConfig.liveScoreBaseUrl}/matches/v2/get-incidents',
+    ).replace(queryParameters: {'Eid': eid, 'Category': category});
+
+    final response = await _retryWithBackoff(
+          () => http.get(uri, headers: {
+        'Content-Type': 'application/json',
+        'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+        'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      print("⚠️ fetchIncidents failed: ${response.statusCode}");
+      print("⚠️ body: ${response.body}");
+      return const {};
+    }
+
+    final body = response.body.trim();
+    if (body.isEmpty || body == '{}' || body == '[]') return const {};
+
+    final dynamic decoded = jsonDecode(body);
+    if (decoded is! Map<String, dynamic>) return const {};
+
+    print("✅ incidents response keys: ${decoded.keys.toList()}");
+    print("✅ incidents Incs: ${decoded['Incs']}");
+
+
+    _cache.set(cacheKey, decoded, ttl: const Duration(minutes: 3));
+    return decoded;
+  }
+
   Future<List<SearchResult>> fetchSearchResults({
     required String category,
     required String query,
@@ -537,8 +577,6 @@ class LiveScoreService {
           queryParameters: {'category': categoryId, 'page': page.toString()},
         );
 
-    print('DEBUG: Fetching news from $uri');
-
     final response = await _retryWithBackoff(
       () => http.get(
         uri,
@@ -558,9 +596,6 @@ class LiveScoreService {
 
     try {
       final dynamic decoded = jsonDecode(response.body);
-      print(
-        'DEBUG: News response keys: ${decoded is Map ? decoded.keys.toList() : 'Not a map'}',
-      );
 
       // Try to extract news items - handle both array and object responses
       List<NewsItem> newsItems = [];
@@ -577,17 +612,9 @@ class LiveScoreService {
         newsItems = _extractNewsItems(decoded).toList();
       }
 
-      if (newsItems.isEmpty) {
-        print('DEBUG: No news items extracted, returning empty list');
-      } else {
-        print('DEBUG: Extracted ${newsItems.length} news items');
-      }
-
       _cache.set(cacheKey, newsItems, ttl: const Duration(minutes: 15));
       return newsItems;
     } catch (e) {
-      print('DEBUG: Error parsing news response: $e');
-      // Return empty list instead of throwing to allow partial loading
       return [];
     }
   }
@@ -749,12 +776,9 @@ class LiveScoreService {
     required String eid,
     required String category,
   }) async {
-    print('DEBUG: fetchLineups called with EID = $eid, Category = $category');
-
     final cacheKey = 'match_lineups_${eid}_$category';
     final cached = _cache.get<Map<String, dynamic>>(cacheKey);
     if (cached != null) {
-      print('DEBUG: Returning cached lineups for EID = $eid');
       return cached;
     }
 
@@ -767,8 +791,6 @@ class LiveScoreService {
     final uri = Uri.parse(
       '${ApiConfig.liveScoreBaseUrl}/matches/v2/get-lineups',
     ).replace(queryParameters: {'Category': category, 'Eid': eid});
-
-    print('DEBUG: Lineups API URL = ${uri.toString()}');
 
     final response = await _retryWithBackoff(
       () => http.get(
@@ -793,71 +815,56 @@ class LiveScoreService {
       final dynamic decoded = jsonDecode(response.body);
 
       if (decoded is Map<String, dynamic>) {
-        // Log the structure for debugging (in production, this helps us understand API responses)
-        print('DEBUG: Lineups response keys: ${decoded.keys.toList()}');
-
         // Check for data in various possible keys
         if (decoded.containsKey('pl')) {
           // Direct players array at top level
-          print('DEBUG: Found pl key (players array)');
           lineupsData = decoded;
         } else if (decoded.containsKey('players')) {
           // Alternative players key
-          print('DEBUG: Found players key');
           lineupsData = decoded;
         } else if (decoded.containsKey('teams')) {
           // Teams data at top level
-          print('DEBUG: Found teams key');
           lineupsData = decoded;
         } else if (decoded.containsKey('Lineups')) {
           // Capitalized lineups key
-          print('DEBUG: Found Lineups key');
           lineupsData = decoded;
         } else if (decoded.containsKey('lineups')) {
           // Lowercase lineups key
-          print('DEBUG: Found lineups key');
           lineupsData = decoded;
         } else if (decoded.containsKey('match')) {
           // Data nested under 'match' key
-          print('DEBUG: Found match key');
           final matchData = decoded['match'];
           if (matchData is Map<String, dynamic>) {
             lineupsData = matchData;
           }
         } else if (decoded.containsKey('M')) {
           // Abbreviated match key
-          print('DEBUG: Found M key');
           final matchData = decoded['M'];
           if (matchData is Map<String, dynamic>) {
             lineupsData = matchData;
           }
         } else if (decoded.containsKey('data')) {
           // Data nested under 'data' key
-          print('DEBUG: Found data key');
           final dataValue = decoded['data'];
           if (dataValue is Map<String, dynamic>) {
             lineupsData = dataValue;
           }
         } else if (decoded.containsKey('response')) {
           // Data nested under 'response' key
-          print('DEBUG: Found response key');
           final responseValue = decoded['response'];
           if (responseValue is Map<String, dynamic>) {
             lineupsData = responseValue;
           }
         } else {
           // Return the full response for inspection if format is unknown
-          print('DEBUG: Unknown response format, returning full response');
           lineupsData = decoded.isEmpty ? {} : decoded;
         }
       }
     } catch (e) {
       // If parsing fails, return empty map
-      print('DEBUG: Error parsing lineups response: $e');
       lineupsData = {};
     }
 
-    print('DEBUG: Final lineupsData keys: ${lineupsData.keys.toList()}');
     _cache.set(cacheKey, lineupsData, ttl: const Duration(minutes: 5));
     return lineupsData;
   }
@@ -866,14 +873,9 @@ class LiveScoreService {
     required String eid,
     required String category,
   }) async {
-    print(
-      'DEBUG: fetchStatistics called with EID = $eid, Category = $category',
-    );
-
     final cacheKey = 'match_statistics_${eid}_$category';
     final cached = _cache.get<Map<String, dynamic>>(cacheKey);
     if (cached != null) {
-      print('DEBUG: Returning cached statistics for EID = $eid');
       return cached;
     }
 
@@ -886,8 +888,6 @@ class LiveScoreService {
     final uri = Uri.parse(
       '${ApiConfig.liveScoreBaseUrl}/matches/v2/get-statistics',
     ).replace(queryParameters: {'Eid': eid, 'Category': category});
-
-    print('DEBUG: Statistics API URL = ${uri.toString()}');
 
     final response = await _retryWithBackoff(
       () => http.get(
@@ -913,58 +913,47 @@ class LiveScoreService {
       final dynamic decoded = jsonDecode(response.body);
 
       if (decoded is Map<String, dynamic>) {
-        print('DEBUG: Statistics response keys: ${decoded.keys.toList()}');
-
         // Check for data in various possible keys
         if (decoded.containsKey('stats')) {
           // Direct stats array at top level
-          print('DEBUG: Found stats key');
           statisticsData = decoded;
         } else if (decoded.containsKey('statistics')) {
           // Alternative statistics key
-          print('DEBUG: Found statistics key');
           statisticsData = decoded;
         } else if (decoded.containsKey('match')) {
           // Data nested under 'match' key
-          print('DEBUG: Found match key');
           final matchData = decoded['match'];
           if (matchData is Map<String, dynamic>) {
             statisticsData = matchData;
           }
         } else if (decoded.containsKey('M')) {
           // Abbreviated match key
-          print('DEBUG: Found M key');
           final matchData = decoded['M'];
           if (matchData is Map<String, dynamic>) {
             statisticsData = matchData;
           }
         } else if (decoded.containsKey('data')) {
           // Data nested under 'data' key
-          print('DEBUG: Found data key');
           final dataValue = decoded['data'];
           if (dataValue is Map<String, dynamic>) {
             statisticsData = dataValue;
           }
         } else if (decoded.containsKey('response')) {
           // Data nested under 'response' key
-          print('DEBUG: Found response key');
           final responseValue = decoded['response'];
           if (responseValue is Map<String, dynamic>) {
             statisticsData = responseValue;
           }
         } else {
           // Return the full response for inspection if format is unknown
-          print('DEBUG: Unknown response format, returning full response');
           statisticsData = decoded.isEmpty ? {} : decoded;
         }
       }
     } catch (e) {
       // If parsing fails, return empty map
-      print('DEBUG: Error parsing statistics response: $e');
       statisticsData = {};
     }
 
-    print('DEBUG: Final statisticsData keys: ${statisticsData.keys.toList()}');
     _cache.set(cacheKey, statisticsData, ttl: const Duration(minutes: 5));
     return statisticsData;
   }
@@ -973,12 +962,9 @@ class LiveScoreService {
     required String eid,
     required String category,
   }) async {
-    print('DEBUG: fetchH2H called with EID = $eid, Category = $category');
-
     final cacheKey = 'match_h2h_${eid}_$category';
     final cached = _cache.get<Map<String, dynamic>>(cacheKey);
     if (cached != null) {
-      print('DEBUG: Returning cached H2H for EID = $eid');
       return cached;
     }
 
@@ -991,8 +977,6 @@ class LiveScoreService {
     final uri = Uri.parse(
       '${ApiConfig.liveScoreBaseUrl}/matches/v2/get-h2h',
     ).replace(queryParameters: {'Eid': eid, 'Category': category});
-
-    print('DEBUG: H2H API URL = ${uri.toString()}');
 
     final response = await _retryWithBackoff(
       () => http.get(
@@ -1018,59 +1002,47 @@ class LiveScoreService {
       final dynamic decoded = jsonDecode(response.body);
 
       if (decoded is Map<String, dynamic>) {
-        print('DEBUG: H2H response keys: ${decoded.keys.toList()}');
-
         // Check for data in various possible keys
         if (decoded.containsKey('h2h')) {
           // Direct h2h array at top level
-          print('DEBUG: Found h2h key');
           h2hData = decoded;
         } else if (decoded.containsKey('headToHead')) {
           // Alternative h2h key
-          print('DEBUG: Found headToHead key');
           h2hData = decoded;
         } else if (decoded.containsKey('H2H')) {
           // Capitalized h2h key
-          print('DEBUG: Found H2H key');
           h2hData = decoded;
         } else if (decoded.containsKey('events')) {
           // Events array
-          print('DEBUG: Found events key');
           h2hData = decoded;
         } else if (decoded.containsKey('match')) {
           // Data nested under 'match' key
-          print('DEBUG: Found match key');
           final matchData = decoded['match'];
           if (matchData is Map<String, dynamic>) {
             h2hData = matchData;
           }
         } else if (decoded.containsKey('data')) {
           // Data nested under 'data' key
-          print('DEBUG: Found data key');
           final dataValue = decoded['data'];
           if (dataValue is Map<String, dynamic>) {
             h2hData = dataValue;
           }
         } else if (decoded.containsKey('response')) {
           // Data nested under 'response' key
-          print('DEBUG: Found response key');
           final responseValue = decoded['response'];
           if (responseValue is Map<String, dynamic>) {
             h2hData = responseValue;
           }
         } else {
           // Return the full response for inspection if format is unknown
-          print('DEBUG: Unknown response format, returning full response');
           h2hData = decoded.isEmpty ? {} : decoded;
         }
       }
     } catch (e) {
       // If parsing fails, return empty map
-      print('DEBUG: Error parsing H2H response: $e');
       h2hData = {};
     }
 
-    print('DEBUG: Final h2hData keys: ${h2hData.keys.toList()}');
     _cache.set(cacheKey, h2hData, ttl: const Duration(minutes: 5));
     return h2hData;
   }
@@ -1153,8 +1125,6 @@ class LiveScoreService {
       '${ApiConfig.liveScoreBaseUrl}/teams/detail',
     ).replace(queryParameters: {'ID': normalizedTeamId});
 
-    print('DEBUG: Team detail API URL = ${uri.toString()}');
-
     final response = await _retryWithBackoff(
       () => http.get(
         uri,
@@ -1180,11 +1150,9 @@ class LiveScoreService {
     final dynamic decoded = jsonDecode(body);
     final normalized = _normalizeTeamDetailResponse(decoded);
     if (normalized.isEmpty) {
-      print('DEBUG: Team detail response was empty after normalization');
       return const {};
     }
 
-    print('DEBUG: Team detail response keys: ${normalized.keys.toList()}');
     _cache.set(cacheKey, normalized, ttl: const Duration(minutes: 15));
     return normalized;
   }
@@ -1906,14 +1874,8 @@ class LiveScoreService {
       'E_Id', // Underscore variant
     ]);
     if (eid.isEmpty) {
-      print(
-        'DEBUG: Failed to extract EID from event. Available keys: ${event.keys.toList()}',
-      );
       return null;
     }
-    print(
-      'DEBUG: Extracted EID = $eid from list endpoint. Available keys: ${event.keys.take(10).toList()}',
-    );
 
     final homeTeam = _readString(event, const [
       'T1.0.Nm',
@@ -2373,8 +2335,7 @@ class LiveScoreService {
         ? 'https://storage.livescore.com/$normalized'
         : 'https://storage.livescore.com/images/news/$normalized';
 
-    return 'https://getimage.membertsd.workers.dev/?url=' +
-        Uri.encodeComponent(sourceUrl);
+    return 'https://getimage.membertsd.workers.dev/?url=${Uri.encodeComponent(sourceUrl)}';
   }
 
   String _normalizeNewsContent(String value, {String fallback = ''}) {

@@ -98,17 +98,11 @@ class _NewsPageState extends State<NewsPage> {
 
       // If new endpoint returns empty, fall back to old news API
       if (news.isEmpty && _currentPage == 1) {
-        print(
-          'DEBUG: New news endpoint returned empty, falling back to old endpoint',
-        );
         return await _liveScoreService.fetchNews();
       }
 
       return news;
     } catch (e) {
-      print(
-        'DEBUG: Error loading news from new endpoint: $e, falling back to old endpoint',
-      );
       // Fall back to old news endpoint on error
       if (_currentPage == 1) {
         return await _liveScoreService.fetchNews();
@@ -141,7 +135,6 @@ class _NewsPageState extends State<NewsPage> {
       });
     } catch (e) {
       _currentPage--;
-      print('DEBUG: Error loading more news: $e');
       if (mounted) {
         ScaffoldMessenger.of(
           context,

@@ -17,18 +17,23 @@ class _WelcomePageState extends State<WelcomePage> {
   final List<WelcomeContent> welcomeList = [
     WelcomeContent(
       newsTitle: 'News',
-      newsDescription: 'Round of 32 takeaway: low\'s shocking upset, Big TEN runs Sweat 16',
-      backgroundImage: 'https://media.wallpics.app/upscaled/2025/11/06/KJ1XwIZAkbu0Z09lSAd4oGcA44s5xPEA9h9WRIlU.webp',
+      newsDescription:
+          'Round of 32 takeaway: low\'s shocking upset, Big TEN runs Sweat 16',
+      backgroundImage:
+          'https://media.wallpics.app/upscaled/2025/11/06/KJ1XwIZAkbu0Z09lSAd4oGcA44s5xPEA9h9WRIlU.webp',
     ),
     WelcomeContent(
       newsTitle: 'Updates',
-      newsDescription: 'Latest match highlights and player statistics from around the world',
+      newsDescription:
+          'Latest match highlights and player statistics from around the world',
       backgroundImage: 'https://wallpapercave.com/wp/wp12674885.jpg',
     ),
     WelcomeContent(
       newsTitle: 'Trending',
-      newsDescription: 'Top performers and thrilling moments from this week\'s games',
-      backgroundImage: 'https://i.pinimg.com/736x/9e/ef/d4/9eefd4c90b8ce59d6b4a3fe1dc79c781.jpg',
+      newsDescription:
+          'Top performers and thrilling moments from this week\'s games',
+      backgroundImage:
+          'https://i.pinimg.com/736x/9e/ef/d4/9eefd4c90b8ce59d6b4a3fe1dc79c781.jpg',
     ),
   ];
 
@@ -59,7 +64,6 @@ class _WelcomePageState extends State<WelcomePage> {
   Widget _buildWelcomeScreen(WelcomeContent content, int index) {
     return Stack(
       children: [
-
         Container(
           decoration: BoxDecoration(
             image: DecorationImage(
@@ -86,8 +90,6 @@ class _WelcomePageState extends State<WelcomePage> {
           mainAxisAlignment: MainAxisAlignment.end,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            
-
             // SizedBox(
             //   height: MediaQuery.of(context).padding.top,
             // ),
@@ -111,7 +113,6 @@ class _WelcomePageState extends State<WelcomePage> {
             //     ),
             //   ),
             // ),
-
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -181,7 +182,6 @@ class _WelcomePageState extends State<WelcomePage> {
                 children: [
                   GestureDetector(
                     onTap: () {
-                      print('DEBUG: Skip button tapped');
                       _navigateToHome();
                     },
                     behavior: HitTestBehavior.opaque,
@@ -221,7 +221,9 @@ class _WelcomePageState extends State<WelcomePage> {
                       ),
                     ),
                     child: Text(
-                      currentPage == welcomeList.length - 1 ? 'Get Started' : 'Next',
+                      currentPage == welcomeList.length - 1
+                          ? 'Get Started'
+                          : 'Next',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -257,8 +259,8 @@ class _WelcomePageState extends State<WelcomePage> {
 
   void _navigateToHome() {
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const HomePage()),
-    );
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => const HomePage()));
   }
 }
