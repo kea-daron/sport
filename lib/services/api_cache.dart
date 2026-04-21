@@ -41,6 +41,15 @@ class ApiCache {
     return entry.data as T?;
   }
 
+  T? peek<T>(String key) {
+    final entry = _cache[key];
+    if (entry == null) {
+      return null;
+    }
+
+    return entry.data as T?;
+  }
+
   void clear() {
     _cache.clear();
   }

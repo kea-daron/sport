@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
@@ -67,8 +68,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<List<MatchItem>> _loadMatches() {
-    return _liveScoreService.fetchMatchesFromPopularLeagues(
+    return _liveScoreService.fetchMatchesByDate(
       category: 'soccer',
+      date: DateTime.now(),
       timezone: -7,
     );
   }
@@ -130,7 +132,6 @@ class _HomePageState extends State<HomePage> {
   void _showMoreLeagues() {
     setState(() {
       _visibleLeaguesCount += 1;
-      _matchesFuture = _loadMatches();
     });
   }
 
@@ -157,7 +158,7 @@ class _HomePageState extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildFeaturedSection(),
-              const SizedBox(height: 24),
+              const SizedBox(height: 1),
               _buildLiveMatch(),
               const SizedBox(height: 24),
               _buildTeamLogos(),
@@ -175,145 +176,108 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildFeaturedSection() {
-    return Stack(
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              height: 240,
-              child: PageView.builder(
-                controller: _bannerController,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentBannerIndex = index;
-                  });
-                },
-                itemCount: bannerList.length,
-                itemBuilder: (context, index) {
-                  return Stack(
-                    children: [
-                      Positioned.fill(
-                        child: Image.network(
-                          bannerList[index].image,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return _buildImageFallback();
-                          },
-                        ),
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withOpacity(0.8),
-                            ],
+    return SizedBox(
+      height: 330,
+      child: Stack(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                height: 300,
+                child: PageView.builder(
+                  controller: _bannerController,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentBannerIndex = index;
+                    });
+                  },
+                  itemCount: bannerList.length,
+                  itemBuilder: (context, index) {
+                    return Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Image.network(
+                            bannerList[index].image,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return _buildImageFallback();
+                            },
                           ),
                         ),
-                      ),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'FEATURED',
-                                  style: TextStyle(
-                                    color: Colors.yellow,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 1.2,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  bannerList[index].title,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.3,
-                                  ),
-                                ),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withOpacity(0.8),
                               ],
                             ),
                           ),
-                        ],
-                      ),
-                    ],
-                  );
-                },
+                        ),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'FEATURED',
+                                    style: TextStyle(
+                                      color: Colors.yellow,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    bannerList[index].title,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  bannerList.length,
-                  (index) => Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: index == _currentBannerIndex ? 24 : 8,
-                    height: 3,
-                    decoration: BoxDecoration(
-                      color: index == _currentBannerIndex
-                          ? Colors.yellow.shade600
-                          : Colors.white30,
-                      borderRadius: BorderRadius.circular(2),
+              const SizedBox(height: 12),
+              Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    bannerList.length,
+                    (index) => Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: index == _currentBannerIndex ? 24 : 8,
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: index == _currentBannerIndex
+                            ? Colors.yellow.shade600
+                            : Colors.white30,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-        Positioned(
-          top: 16,
-          right: 16,
-          child: Row(
-            children: [
-              _buildTopIcon(
-                Icons.format_list_bulleted_rounded,
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const LeagueListPage()),
-                  );
-                },
-              ),
-              const SizedBox(width: 12),
-              _buildTopIcon(
-                Icons.search,
-                onTap: () {
-                  Navigator.of(
-                    context,
-                  ).push(MaterialPageRoute(builder: (_) => const SearchPage()));
-                },
-              ),
             ],
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTopIcon(IconData icon, {VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.white.withOpacity(0.2),
-          border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
-        ),
-        padding: const EdgeInsets.all(8),
-        child: Icon(icon, color: Colors.white, size: 20),
+        ],
       ),
     );
   }
@@ -328,7 +292,7 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Popular Leagues',
+                'Live Scores Today',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
@@ -374,8 +338,8 @@ class _HomePageState extends State<HomePage> {
               final matches = snapshot.data ?? const <MatchItem>[];
               if (matches.isEmpty) {
                 return _buildMatchesMessage(
-                  title: 'No soccer matches found',
-                  subtitle: 'Try again later or pull down to refresh.',
+                  title: 'No matches scheduled today',
+                  subtitle: 'Try another refresh or check back later today.',
                 );
               }
 
@@ -809,19 +773,20 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildTeamLogos() {
+    const double logoSize = 66;
     final teams = [
+      'assets/logo_sport/1.png',
       'assets/logo_sport/2.png',
+      'assets/logo_sport/3.png',
+      'assets/logo_sport/7.png',
+      'assets/logo_sport/1.png',
       'assets/logo_sport/2.png',
-      'assets/logo_sport/2.png',
-      'assets/logo_sport/2.png',
-      'assets/logo_sport/2.png',
-      'assets/logo_sport/2.png',
-      'assets/logo_sport/2.png',
-      'assets/logo_sport/2.png',
-      'assets/logo_sport/2.png',
-      'assets/logo_sport/2.png',
-      'assets/logo_sport/2.png',
-      'assets/logo_sport/2.png',
+      'assets/logo_sport/26.png',
+      'assets/logo_sport/24.png',
+      'assets/logo_sport/21.png',
+      'assets/logo_sport/22.png',
+      'assets/logo_sport/23.png',
+      'assets/logo_sport/24.png',
     ];
     final marqueeTeams = [...teams, ...teams];
 
@@ -837,24 +802,23 @@ class _HomePageState extends State<HomePage> {
           return Padding(
             padding: const EdgeInsets.only(right: 12),
             child: SizedBox(
-              width: 60,
+              width: logoSize,
               child: Center(
-                child: Image.asset(
-                  marqueeTeams[index],
-                  width: 80,
-                  height: 80,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const SizedBox(
-                      width: 80,
-                      height: 80,
-                      child: Center(
+                child: SizedBox(
+                  width: logoSize,
+                  height: logoSize,
+                  child: Image.asset(
+                    marqueeTeams[index],
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Center(
                         child: Icon(
                           Icons.shield_outlined,
                           color: Colors.white54,
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
@@ -1336,46 +1300,137 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildBottomNav() {
-    return BottomNavigationBar(
-      type: BottomNavigationBarType.fixed,
-      backgroundColor: const Color.fromARGB(255, 0, 0, 0),
-      selectedItemColor: Colors.yellow.shade600,
-      unselectedItemColor: Colors.white60,
-      currentIndex: _selectedIndex,
-      onTap: (index) {
-        if (index == 1) {
-          Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (_) => const NewsPage()));
-          return;
-        }
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black,
+        border: Border(
+          top: BorderSide(color: Colors.white.withOpacity(0.05), width: 1),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildNavItem(
+              index: 0,
+              icon: Icons.home_outlined,
+              label: 'Home',
+              onTap: () {
+                setState(() => _selectedIndex = 0);
+              },
+            ),
+            _buildNavItem(
+              index: 1,
+              icon: Icons.description_outlined,
+              label: 'News',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const NewsPage()),
+                );
+              },
+            ),
+            _buildSearchNavItem(),
+            _buildNavItem(
+              index: 3,
+              icon: Icons.sports_soccer_outlined,
+              label: 'Sports',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const LiveScorePage()),
+                );
+              },
+            ),
+            _buildNavItem(
+              index: 4,
+              icon: Icons.format_list_bulleted_outlined,
+              label: 'Leagues',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const LeagueListPage()),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-        if (index == 2) {
-          Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (_) => const LiveScorePage()));
-          return;
-        }
+  Widget _buildNavItem({
+    required int index,
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    final isSelected = _selectedIndex == index;
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            color: isSelected ? Colors.yellow.shade600 : Colors.white54,
+            size: 24,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.yellow.shade600 : Colors.white54,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-        setState(() {
-          _selectedIndex = index;
-        });
+  Widget _buildSearchNavItem() {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SearchPage()),
+        );
       },
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.description_outlined),
-          label: 'News',
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.yellow.shade600.withOpacity(0.25),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: Colors.yellow.shade600.withOpacity(0.4),
+                width: 1.5,
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.search,
+                  color: Colors.yellow.shade600,
+                  size: 26,
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  'Search',
+                  style: TextStyle(
+                    color: Colors.yellow.shade600,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.sports_soccer_outlined),
-          label: 'Sports',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.play_circle_outline),
-          label: 'Videos',
-        ),
-      ],
+      ),
     );
   }
 }

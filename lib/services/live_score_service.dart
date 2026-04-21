@@ -19,6 +19,12 @@ class LiveScoreService {
   static const int _maxRetries = 3;
   static const Duration _retryDelay = Duration(seconds: 1);
   static final _cache = ApiCache();
+  static final Map<String, Future<dynamic>> _inFlightRequests = {};
+
+  /// Clear all cached data - useful when API returns 403 errors
+  static void clearCache() {
+    _cache.clear();
+  }
 
   Future<List<MatchItem>> fetchMatchesByDate({
     required String category,
@@ -31,13 +37,10 @@ class LiveScoreService {
       return cached;
     }
 
-    if (!ApiConfig.isConfigured) {
-      throw Exception(
-        'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
-      );
-    }
+    final stale = _cache.peek<List<MatchItem>>(cacheKey);
 
-    final uri =
+    return _runCoalesced<List<MatchItem>>(cacheKey, () async {
+      final response = await _get(
         Uri.parse(
           '${ApiConfig.liveScoreBaseUrl}${ApiConfig.liveScorePath}',
         ).replace(
@@ -46,34 +49,21 @@ class LiveScoreService {
             'Date': _formatDate(date),
             'Timezone': timezone.toString(),
           },
-        );
-
-    final response = await _retryWithBackoff(
-      () => http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-rapidapi-key': ApiConfig.liveScoreApiKey,
-          'x-rapidapi-host': ApiConfig.liveScoreApiHost,
-        },
-      ),
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception(
-        'LiveScore request failed: ${response.statusCode} ${response.reasonPhrase}',
+        ),
       );
-    }
 
-    final dynamic decoded = jsonDecode(response.body);
-    final List<dynamic> stages = _extractStages(decoded);
+      if (response.statusCode != 200) {
+        if (stale != null && _shouldUseStaleCache(response.statusCode)) {
+          return stale;
+        }
 
-    final matches = stages
-        .expand((dynamic stage) => _parseStageMatches(stage))
-        .toList();
+        throw Exception(_buildRequestError('LiveScore', response));
+      }
 
-    _cache.set(cacheKey, matches, ttl: const Duration(minutes: 10));
-    return matches;
+      final matches = _parseMatchesResponse(response.body);
+      _cache.set(cacheKey, matches, ttl: const Duration(minutes: 10));
+      return matches;
+    });
   }
 
   Future<List<MatchItem>> fetchLiveMatches({
@@ -86,48 +76,48 @@ class LiveScoreService {
       return cached;
     }
 
-    if (!ApiConfig.isConfigured) {
-      throw Exception(
-        'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
-      );
-    }
+    final stale = _cache.peek<List<MatchItem>>(cacheKey);
 
-    final uri =
-        Uri.parse(
-          '${ApiConfig.liveScoreBaseUrl}${ApiConfig.liveScoreLivePath}',
-        ).replace(
-          queryParameters: {
-            'Category': category,
-            'Timezone': timezone.toString(),
-          },
-        );
+    return _runCoalesced<List<MatchItem>>(cacheKey, () async {
+      final liveUri =
+          Uri.parse(
+            '${ApiConfig.liveScoreBaseUrl}${ApiConfig.liveScoreLivePath}',
+          ).replace(
+            queryParameters: {
+              'Category': category,
+              'Timezone': timezone.toString(),
+            },
+          );
 
-    final response = await _retryWithBackoff(
-      () => http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-rapidapi-key': ApiConfig.liveScoreApiKey,
-          'x-rapidapi-host': ApiConfig.liveScoreApiHost,
-        },
-      ),
-    );
+      final liveResponse = await _get(liveUri);
+      if (liveResponse.statusCode == 200) {
+        final matches = _parseMatchesResponse(liveResponse.body);
+        _cache.set(cacheKey, matches, ttl: const Duration(minutes: 5));
+        return matches;
+      }
 
-    if (response.statusCode != 200) {
-      throw Exception(
-        'LiveScore request failed: ${response.statusCode} ${response.reasonPhrase}',
-      );
-    }
+      if (_shouldUseStaleCache(liveResponse.statusCode) && stale != null) {
+        return stale;
+      }
 
-    final dynamic decoded = jsonDecode(response.body);
-    final List<dynamic> stages = _extractStages(decoded);
+      if (_shouldFallbackToToday(liveResponse.statusCode)) {
+        try {
+          final todayMatches = await fetchMatchesByDate(
+            category: category,
+            date: DateTime.now(),
+            timezone: timezone,
+          );
+          _cache.set(cacheKey, todayMatches, ttl: const Duration(minutes: 2));
+          return todayMatches;
+        } catch (_) {
+          if (stale != null) {
+            return stale;
+          }
+        }
+      }
 
-    final matches = stages
-        .expand((dynamic stage) => _parseStageMatches(stage))
-        .toList();
-
-    _cache.set(cacheKey, matches, ttl: const Duration(minutes: 5));
-    return matches;
+      throw Exception(_buildRequestError('LiveScore live scores', liveResponse));
+    });
   }
 
   Future<List<LeagueOption>> fetchLeagueOptions({
@@ -219,49 +209,8 @@ class LiveScoreService {
 
     final dynamic decoded = jsonDecode(response.body);
     final options = _extractLeagueOptions(decoded, category);
-    _cache.set(cacheKey, options, ttl: const Duration(minutes: 15));
-    return options;
-  }
-
-  Future<List<LeagueOption>> fetchPopularLeaguesOnHomePage({
-    required String category,
-  }) async {
-    final cacheKey = 'popular_leagues_$category';
-    final cached = _cache.get<List<LeagueOption>>(cacheKey);
-    if (cached != null) {
-      return cached;
-    }
-
-    if (!ApiConfig.isConfigured) {
-      throw Exception(
-        'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
-      );
-    }
-
-    final uri = Uri.parse(
-      '${ApiConfig.liveScoreBaseUrl}/leagues/v2/list-popular',
-    ).replace(queryParameters: {'Category': category});
-
-    final response = await _retryWithBackoff(
-      () => http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-rapidapi-key': ApiConfig.liveScoreApiKey,
-          'x-rapidapi-host': ApiConfig.liveScoreApiHost,
-        },
-      ),
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception(
-        'LiveScore popular leagues request failed: ${response.statusCode} ${response.reasonPhrase}',
-      );
-    }
-
-    final dynamic decoded = jsonDecode(response.body);
-    final options = _extractLeagueOptions(decoded, category);
-    _cache.set(cacheKey, options, ttl: const Duration(minutes: 15));
+    // Increased TTL to 30 minutes to reduce API calls
+    _cache.set(cacheKey, options, ttl: const Duration(minutes: 30));
     return options;
   }
 
@@ -356,6 +305,48 @@ class LiveScoreService {
     final results = _extractSearchResults(decoded, category);
     _cache.set(cacheKey, results, ttl: const Duration(minutes: 5));
     return results;
+  }
+
+  Future<List<MatchItem>> fetchHomepageMatches({
+    required String category,
+    double timezone = -7,
+  }) async {
+    final cacheKey = 'homepage_matches_$category';
+    final cached = _cache.get<List<MatchItem>>(cacheKey);
+    if (cached != null) {
+      return cached;
+    }
+
+    final popularLeagues = await fetchPopularLeagues(category: category);
+
+    final matchesList = <MatchItem>[];
+    // Only fetch from top 3 leagues for homepage to optimize API calls
+    for (final league in popularLeagues.take(3)) {
+      try {
+        final matches = await fetchMatchesByLeague(
+          category: category,
+          ccd: league.ccd,
+          scd: league.scd,
+          timezone: timezone,
+        );
+        matchesList.addAll(matches);
+      } catch (_) {
+        // Skip leagues that fail to load
+        continue;
+      }
+    }
+
+    // Sort by start time
+    matchesList.sort((a, b) {
+      if (a.startTime == null || b.startTime == null) {
+        return 0;
+      }
+      return b.startTime!.compareTo(a.startTime!);
+    });
+
+    // Increased TTL to 10 minutes to reduce API calls
+    _cache.set(cacheKey, matchesList, ttl: const Duration(minutes: 10));
+    return matchesList;
   }
 
   Future<List<MatchItem>> fetchMatchesFromPopularLeagues({
@@ -1395,6 +1386,20 @@ class LiveScoreService {
     return '$year$month$day';
   }
 
+  static String _getErrorMessage(int statusCode) {
+    switch (statusCode) {
+      case 401:
+      case 403:
+        return 'Invalid or expired API key. Please update your LIVE_SCORE_API_KEY configuration with a valid RapidAPI key.';
+      case 429:
+        return 'Too many requests. Please try again later.';
+      case 500:
+        return 'LiveScore API server error. Please try again later.';
+      default:
+        return 'LiveScore API error: $statusCode';
+    }
+  }
+
   static Future<http.Response> _retryWithBackoff(
     Future<http.Response> Function() request,
   ) async {
@@ -1406,7 +1411,8 @@ class LiveScoreService {
 
         if (response.statusCode == 429) {
           if (retryCount < _maxRetries - 1) {
-            final delay = _retryDelay * (2 ^ retryCount);
+            // Exponential backoff: 1s, 2s, 4s
+            final delay = _retryDelay * (1 << retryCount);
             await Future.delayed(delay);
             retryCount++;
             continue;
@@ -1416,7 +1422,8 @@ class LiveScoreService {
         return response;
       } catch (e) {
         if (retryCount < _maxRetries - 1) {
-          final delay = _retryDelay * (2 ^ retryCount);
+          // Exponential backoff: 1s, 2s, 4s
+          final delay = _retryDelay * (1 << retryCount);
           await Future.delayed(delay);
           retryCount++;
           continue;
@@ -1426,6 +1433,66 @@ class LiveScoreService {
     }
 
     throw Exception('Max retries exceeded');
+  }
+
+  Future<T> _runCoalesced<T>(
+    String key,
+    Future<T> Function() action,
+  ) {
+    final existing = _inFlightRequests[key];
+    if (existing != null) {
+      return existing as Future<T>;
+    }
+
+    final future = action();
+    _inFlightRequests[key] = future;
+    return future.whenComplete(() => _inFlightRequests.remove(key));
+  }
+
+  Future<http.Response> _get(Uri uri) {
+    if (!ApiConfig.isConfigured) {
+      throw Exception(
+        'Missing LiveScore API config. Set LIVE_SCORE_API_KEY with --dart-define.',
+      );
+    }
+
+    return _retryWithBackoff(() => http.get(uri, headers: _rapidApiHeaders));
+  }
+
+  List<MatchItem> _parseMatchesResponse(String body) {
+    final trimmedBody = body.trim();
+    if (trimmedBody.isEmpty) {
+      return const [];
+    }
+
+    final dynamic decoded = jsonDecode(trimmedBody);
+    final List<dynamic> stages = _extractStages(decoded);
+    return stages
+        .expand((dynamic stage) => _parseStageMatches(stage))
+        .toList();
+  }
+
+  static Map<String, String> get _rapidApiHeaders => {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'x-rapidapi-key': ApiConfig.liveScoreApiKey,
+    'x-rapidapi-host': ApiConfig.liveScoreApiHost,
+  };
+
+  static bool _shouldUseStaleCache(int statusCode) {
+    return statusCode == 403 || statusCode == 429 || statusCode >= 500;
+  }
+
+  static bool _shouldFallbackToToday(int statusCode) {
+    return statusCode == 403 || statusCode == 404 || statusCode == 429;
+  }
+
+  static String _buildRequestError(String context, http.Response response) {
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      return _getErrorMessage(response.statusCode);
+    }
+
+    return '$context request failed: ${response.statusCode} ${response.reasonPhrase}';
   }
 
   List<LeagueOption> _extractLeagueOptions(dynamic decoded, String category) {

@@ -130,16 +130,19 @@ class _SearchPageState extends State<SearchPage> {
         elevation: 0,
         title: const Text(
           'Search',
-          style: TextStyle(fontWeight: FontWeight.w700),
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+          ),
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         children: [
           _buildSearchBox(),
-          const SizedBox(height: 16),
-          _buildCategoryPicker(),
           const SizedBox(height: 20),
+          _buildCategoryPicker(),
+          const SizedBox(height: 24),
           _buildBody(),
         ],
       ),
@@ -147,77 +150,167 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget _buildSearchBox() {
-    return TextField(
-      controller: _queryController,
-      textInputAction: TextInputAction.search,
-      onSubmitted: (_) => _submitSearch(),
-      style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        hintText: 'Search teams, leagues, or matches',
-        hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-        filled: true,
-        fillColor: const Color(0xFF141414),
-        prefixIcon: const Icon(Icons.search, color: Colors.white70),
-        suffixIcon: IconButton(
-          onPressed: _submitSearch,
-          icon: Icon(Icons.arrow_forward, color: Colors.yellow.shade600),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.yellow.shade600.withOpacity(0.1),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _queryController,
+        textInputAction: TextInputAction.search,
+        onSubmitted: (_) => _submitSearch(),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.yellow.shade600),
+        decoration: InputDecoration(
+          hintText: 'Search teams, leagues, or matches',
+          hintStyle: TextStyle(
+            color: Colors.white.withOpacity(0.4),
+            fontSize: 14,
+          ),
+          filled: true,
+          fillColor: const Color(0xFF1A1A1A),
+          prefixIcon: Padding(
+            padding: const EdgeInsets.only(left: 16),
+            child: Icon(
+              Icons.search,
+              color: Colors.yellow.shade600,
+              size: 28,
+            ),
+          ),
+          prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+          suffixIcon: IconButton(
+            onPressed: _submitSearch,
+            icon: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.yellow.shade600,
+                    Colors.yellow.shade700,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.all(8),
+              child: const Icon(Icons.arrow_forward, color: Colors.black, size: 18),
+            ),
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(20),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(20),
+            borderSide: BorderSide(
+              color: Colors.white.withOpacity(0.1),
+              width: 1.5,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(20),
+            borderSide: BorderSide(
+              color: Colors.yellow.shade600,
+              width: 2,
+            ),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
         ),
       ),
     );
   }
 
   Widget _buildCategoryPicker() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: _categories.map((category) {
-        final isSelected = category == _selectedCategory;
-        return InkWell(
-          onTap: () => _changeCategory(category),
-          borderRadius: BorderRadius.circular(999),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? Colors.yellow.shade600
-                  : const Color(0xFF141414),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(
-                color: isSelected
-                    ? Colors.yellow.shade600
-                    : Colors.white.withOpacity(0.08),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  category.icon,
-                  size: 18,
-                  color: isSelected ? Colors.black : Colors.white70,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  category.label,
-                  style: TextStyle(
-                    color: isSelected ? Colors.black : Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Text(
+            'Sports',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
             ),
           ),
-        );
-      }).toList(),
+        ),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: _categories.map((category) {
+            final isSelected = category == _selectedCategory;
+            return InkWell(
+              onTap: () => _changeCategory(category),
+              borderRadius: BorderRadius.circular(999),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: isSelected
+                      ? LinearGradient(
+                          colors: [
+                            Colors.yellow.shade600,
+                            Colors.yellow.shade700,
+                          ],
+                        )
+                      : LinearGradient(
+                          colors: [
+                            const Color(0xFF1E1E1E),
+                            const Color(0xFF161616),
+                          ],
+                        ),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: isSelected
+                        ? Colors.yellow.shade600
+                        : Colors.white.withOpacity(0.1),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    if (isSelected)
+                      BoxShadow(
+                        color: Colors.yellow.shade600.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      category.icon,
+                      size: 20,
+                      color: isSelected ? Colors.black : Colors.yellow.shade600,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      category.label,
+                      style: TextStyle(
+                        color: isSelected ? Colors.black : Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 
@@ -262,75 +355,121 @@ class _SearchPageState extends State<SearchPage> {
     final canOpen = result.canOpenMatch || result.canOpenLeague;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 14),
       child: InkWell(
         onTap: canOpen ? () => _openResult(result) : null,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFF141414),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+              if (canOpen)
+                BoxShadow(
+                  color: Colors.yellow.shade600.withOpacity(0.1),
+                  blurRadius: 16,
+                  offset: const Offset(0, 2),
+                ),
+            ],
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF1E1E1E),
+                const Color(0xFF141414),
+              ],
+            ),
+            border: Border.all(
+              color: canOpen
+                  ? Colors.yellow.shade600.withOpacity(0.2)
+                  : Colors.white.withOpacity(0.05),
+              width: 1.5,
+            ),
           ),
-          child: Row(
-            children: [
-              _buildLeading(result),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      result.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      result.subtitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.72),
-                        fontSize: 12,
-                        height: 1.3,
-                      ),
-                    ),
-                    if (result.homeTeam.isNotEmpty ||
-                        result.awayTeam.isNotEmpty) ...[
-                      const SizedBox(height: 8),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                _buildLeading(result),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        '${result.homeTeam}${result.awayTeam.isNotEmpty ? ' vs ${result.awayTeam}' : ''}',
-                        style: TextStyle(
-                          color: Colors.yellow.shade600,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                        result.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          height: 1.2,
                         ),
                       ),
+                      const SizedBox(height: 6),
+                      Text(
+                        result.subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.65),
+                          fontSize: 13,
+                          height: 1.3,
+                        ),
+                      ),
+                      if (result.homeTeam.isNotEmpty ||
+                          result.awayTeam.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.yellow.shade600.withOpacity(0.2),
+                                Colors.yellow.shade700.withOpacity(0.1),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.yellow.shade600.withOpacity(0.3),
+                            ),
+                          ),
+                          child: Text(
+                            '${result.homeTeam}${result.awayTeam.isNotEmpty ? ' vs ${result.awayTeam}' : ''}',
+                            style: TextStyle(
+                              color: Colors.yellow.shade400,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    _buildTypeBadge(result.type),
+                    const SizedBox(height: 12),
+                    Icon(
+                      canOpen ? Icons.arrow_forward_ios : Icons.info_outline,
+                      size: 18,
+                      color: canOpen ? Colors.yellow.shade600 : Colors.white30,
+                    ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  _buildTypeBadge(result.type),
-                  const SizedBox(height: 10),
-                  Icon(
-                    canOpen ? Icons.arrow_forward_ios : Icons.info_outline,
-                    size: 16,
-                    color: canOpen ? Colors.yellow.shade600 : Colors.white38,
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -339,12 +478,26 @@ class _SearchPageState extends State<SearchPage> {
 
   Widget _buildLeading(SearchResult result) {
     if (result.imageUrl.trim().isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(14),
+      return Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.yellow.shade600.withOpacity(0.2),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
         child: Image.network(
           result.imageUrl,
-          width: 52,
-          height: 52,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) => _buildFallbackAvatar(),
         ),
@@ -356,33 +509,64 @@ class _SearchPageState extends State<SearchPage> {
 
   Widget _buildFallbackAvatar() {
     return Container(
-      width: 52,
-      height: 52,
+      width: 56,
+      height: 56,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF292929), Color(0xFF1A1A1A)],
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.yellow.shade600.withOpacity(0.2),
+            Colors.yellow.shade700.withOpacity(0.1),
+          ],
+        ),
+        border: Border.all(
+          color: Colors.yellow.shade600.withOpacity(0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.yellow.shade600.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Icon(
+          Icons.sports,
+          color: Colors.yellow.shade600,
+          size: 28,
         ),
       ),
-      child: Icon(Icons.sports, color: Colors.yellow.shade600),
     );
   }
 
   Widget _buildTypeBadge(String type) {
     final normalized = type.trim().isEmpty ? 'item' : type;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        gradient: LinearGradient(
+          colors: [
+            Colors.yellow.shade600.withOpacity(0.15),
+            Colors.yellow.shade700.withOpacity(0.05),
+          ],
+        ),
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: Colors.yellow.shade600.withOpacity(0.3),
+          width: 1,
+        ),
       ),
       child: Text(
         normalized.toUpperCase(),
         style: TextStyle(
-          color: Colors.yellow.shade600,
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.3,
+          color: Colors.yellow.shade400,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.4,
         ),
       ),
     );
@@ -391,30 +575,65 @@ class _SearchPageState extends State<SearchPage> {
   Widget _buildMessageCard({required String title, required String subtitle}) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF141414),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF1E1E1E),
+            const Color(0xFF141414),
+          ],
+        ),
+        border: Border.all(
+          color: Colors.yellow.shade600.withOpacity(0.15),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-            ),
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: Colors.yellow.shade600,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.72),
-              fontSize: 12,
-              height: 1.4,
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.only(left: 16),
+            child: Text(
+              subtitle,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.65),
+                fontSize: 13,
+                height: 1.5,
+              ),
             ),
           ),
         ],
