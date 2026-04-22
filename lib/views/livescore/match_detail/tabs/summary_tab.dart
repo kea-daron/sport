@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../match_detail_helpers.dart';
 
 class SummaryTab extends StatelessWidget {
   final dynamic match;
@@ -158,7 +159,19 @@ class _TeamColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = team['Nm'] ?? '';
-    final tsImg = team['tsImg'] as String?;
+    final rawImage = H.readNested(
+      team,
+      const [
+        'Img.img',
+        'Img',
+        'img',
+        'badge.img',
+        'badge',
+        'tsImg',
+      ],
+      '',
+    );
+    final teamLogoUrl = H.teamImageUrl(rawImage);
 
     return Column(
       children: [
@@ -171,9 +184,9 @@ class _TeamColumn extends StatelessWidget {
             border: Border.all(color: color.withOpacity(0.4), width: 1.5),
           ),
           child: ClipOval(
-            child: tsImg != null
+            child: teamLogoUrl != null
                 ? Image.network(
-              'https://www.livescore.com/ls-web-assets/teams/$tsImg',
+              teamLogoUrl,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) =>
               const Icon(Icons.shield, color: Colors.white54),
@@ -374,7 +387,15 @@ class _TimelineIncidents extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = _buildTimeline();
     return Container(
-      color: const Color.fromARGB(255, 0, 0, 0),
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 0, 0, 0),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color.fromARGB(255, 50, 50, 49),
+          width: 1,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         children: items.map((item) {
           if (item.isDivider) {

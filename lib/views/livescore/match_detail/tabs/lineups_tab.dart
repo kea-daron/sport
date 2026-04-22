@@ -70,7 +70,7 @@ class LineupsTab extends StatelessWidget {
       children: [
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF171717),
+            color: const Color.fromARGB(255, 0, 0, 0),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.orange.withOpacity(0.5)),
           ),
@@ -118,7 +118,7 @@ class LineupsTab extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: const Color(0xFF101010),
+        color: const Color.fromARGB(255, 0, 0, 0),
         border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
       ),
       child: Column(
@@ -133,7 +133,7 @@ class LineupsTab extends StatelessWidget {
                     teamName: match.homeTeam,
                     teamImage: match.homeTeamImage,
                     formation: homeTeam['formation']?.toString() ?? '',
-                    accentColor: Colors.amber.shade500,
+                    accentColor: const Color.fromARGB(255, 17, 143, 44),
                     alignEnd: false,
                   ),
                 ),
@@ -207,9 +207,8 @@ class LineupsTab extends StatelessWidget {
         Container(
           width: 34, height: 34,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.08),
+            color: Colors.transparent,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: accentColor.withOpacity(0.30)),
           ),
           clipBehavior: Clip.antiAlias,
           child: url == null
@@ -317,7 +316,7 @@ class LineupsTab extends StatelessWidget {
     final shortName = _lineupPlayerShortName(player);
     final number = _lineupPlayerNumber(player);
     final rating = _lineupPlayerRating(player);
-    final shirtColor = isHome ? const Color(0xFFFFC31A) : const Color(0xFF3B2A63);
+    final shirtColor = isHome ? const Color.fromARGB(255, 26, 255, 102) : const Color(0xFF3B2A63);
     final numberColor = isHome ? Colors.black : Colors.white;
     final numLen = number.trim().length;
     final badgeSize = numLen >= 3 ? 28.0 : 32.0;
@@ -425,7 +424,7 @@ class LineupsTab extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF171717),
+        color: const Color.fromARGB(255, 0, 0, 0),
         borderRadius: BorderRadius.circular(isInjuriesSection ? 18 : 12),
         border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),

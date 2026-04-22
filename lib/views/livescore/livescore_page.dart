@@ -1,14 +1,10 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 
 import '../../models/match_item.dart';
 import '../../services/live_score_service.dart';
 import '../../theme/app_palette.dart';
 import '../../widgets/app_skeleton.dart';
-import '../league/league_list_page.dart';
-import '../news/news_page.dart';
-import '../search/search_page.dart';
+import '../../widgets/app_bottom_nav.dart';
 import 'match_detail_page.dart';
 
 class LiveScorePage extends StatefulWidget {
@@ -245,7 +241,9 @@ class _LiveScorePageState extends State<LiveScorePage> {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(),
+      bottomNavigationBar: const AppBottomNav(
+        currentTab: AppBottomNavTab.sports,
+      ),
     );
   }
 
@@ -919,134 +917,6 @@ class _LiveScorePageState extends State<LiveScorePage> {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  Widget _buildBottomNav() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black,
-        border: Border(
-          top: BorderSide(color: Colors.white.withOpacity(0.05), width: 1),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildNavItem(
-              icon: Icons.home_outlined,
-              label: 'Home',
-              onTap: () {
-                Navigator.of(context).pushReplacementNamed('/home');
-              },
-            ),
-            _buildNavItem(
-              icon: Icons.description_outlined,
-              label: 'News',
-              onTap: () {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (_) => const NewsPage()),
-                );
-              },
-            ),
-            _buildSearchNavItem(),
-            _buildNavItem(
-              icon: Icons.sports_soccer_outlined,
-              label: 'Sports',
-              isSelected: true,
-              onTap: () {
-                // Already on sports page
-              },
-            ),
-            _buildNavItem(
-              icon: Icons.format_list_bulleted_outlined,
-              label: 'Leagues',
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const LeagueListPage()),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    bool isSelected = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: isSelected ? Colors.yellow.shade600 : Colors.white54,
-            size: 24,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? Colors.yellow.shade600 : Colors.white54,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchNavItem() {
-    return GestureDetector(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const SearchPage()),
-        );
-      },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.yellow.shade600.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: Colors.yellow.shade600.withOpacity(0.4),
-                width: 1.5,
-              ),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.search,
-                  color: Colors.yellow.shade600,
-                  size: 26,
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  'Search',
-                  style: TextStyle(
-                    color: Colors.yellow.shade600,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _SportOption {

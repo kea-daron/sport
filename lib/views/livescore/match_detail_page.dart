@@ -117,7 +117,10 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
         ? widget.match.homeTeamId
         : widget.match.awayTeamId;
     if (teamId.trim().isEmpty) return const {};
-    return _liveScoreService.fetchLeagueTable(teamId: teamId);
+    return _liveScoreService.fetchLeagueTable(
+      teamId: teamId,
+      type: 'full',
+    );
   }
 
   Future<Map<String, dynamic>> _loadTeamDetail(String teamId) async {
