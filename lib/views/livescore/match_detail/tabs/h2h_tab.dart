@@ -133,18 +133,12 @@ class H2HTab extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF171717),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF0F0F0)),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4))
-        ],
+        color: const Color.fromARGB(255, 0, 0, 0),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(10),
         child: Column(
           children: [
             Row(children: [
@@ -159,8 +153,7 @@ class H2HTab extends StatelessWidget {
                         style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5)),
+                            fontWeight: FontWeight.w700)),
                   ),
                 ]),
               ),
@@ -172,67 +165,26 @@ class H2HTab extends StatelessWidget {
                     style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.4)),
+                        fontWeight: FontWeight.w700)),
               ]),
             ]),
             Container(
-                margin: const EdgeInsets.symmetric(vertical: 10),
+                margin: const EdgeInsets.symmetric(vertical: 8),
                 height: 1,
                 color: Colors.white.withOpacity(0.08)),
-            Row(children: [
-              Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Flexible(
-                      child: Text(homeTeamData['name'] ?? 'Home',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.right,
-                          style: TextStyle(
-                              color: _winColor(homeScore, awayScore),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700)),
-                    ),
-                    const SizedBox(width: 8),
-                    _teamLogo(homeTeamData['image'] ?? ''),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Row(children: [
-                  _scoreBox(homeScore, awayScore),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    child: const Text('-',
-                        style: TextStyle(
-                            color: Colors.white38,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700)),
-                  ),
-                  _scoreBox(awayScore, homeScore),
-                ]),
-              ),
-              Expanded(
-                child: Row(
-                  children: [
-                    _teamLogo(awayTeamData['image'] ?? ''),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(awayTeamData['name'] ?? 'Away',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                              color: _winColor(awayScore, homeScore),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700)),
-                    ),
-                  ],
-                ),
-              ),
-            ]),
+            _buildTeamResultRow(
+              teamName: homeTeamData['name'] ?? 'Home',
+              teamImage: homeTeamData['image'] ?? '',
+              score: homeScore,
+              isWinner: _scoreValue(homeScore) > _scoreValue(awayScore),
+            ),
+            const SizedBox(height: 6),
+            _buildTeamResultRow(
+              teamName: awayTeamData['name'] ?? 'Away',
+              teamImage: awayTeamData['image'] ?? '',
+              score: awayScore,
+              isWinner: _scoreValue(awayScore) > _scoreValue(homeScore),
+            ),
           ],
         ),
       ),
@@ -258,49 +210,55 @@ class H2HTab extends StatelessWidget {
   Widget _teamLogo(String imagePath) {
     final url = H.teamImageUrl(imagePath);
     return Container(
-      width: 32, height: 32,
-      padding: const EdgeInsets.all(6),
+      width: 20, height: 20,
       decoration: BoxDecoration(
-        color: const Color(0xFF232323),
+        color: Colors.white.withOpacity(0.08),
         shape: BoxShape.circle,
         border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),
+      clipBehavior: Clip.antiAlias,
       child: url == null
-          ? const Icon(Icons.shield_outlined, size: 16, color: Colors.white70)
+          ? const Icon(Icons.shield_outlined, size: 12, color: Colors.white70)
           : Image.network(url,
-          fit: BoxFit.contain,
+          fit: BoxFit.cover,
           errorBuilder: (_, __, ___) =>
-          const Icon(Icons.shield_outlined, size: 16, color: Colors.white70)),
+          const Icon(Icons.shield_outlined, size: 12, color: Colors.white70)),
     );
   }
 
-  Widget _scoreBox(String score, String opponentScore) {
-    final cur = int.tryParse(score) ?? 0;
-    final opp = int.tryParse(opponentScore) ?? 0;
-    Color bg, text, border;
-    if (cur > opp) {
-      bg = const Color(0xFFDCFCE7); text = Colors.black; border = const Color(0xFFBBF7D0);
-    } else if (cur < opp) {
-      bg = const Color(0xFFFEE2E2); text = Colors.black; border = const Color(0xFFFECACA);
-    } else {
-      bg = const Color(0xFF9CA3AF); text = Colors.white; border = const Color(0xFF6B7280);
-    }
-    return Container(
-      width: 28, height: 28,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: border),
-      ),
-      child: Text(score,
-          style: TextStyle(color: text, fontSize: 13, fontWeight: FontWeight.w800)),
+  Widget _buildTeamResultRow({
+    required String teamName,
+    required String teamImage,
+    required String score,
+    required bool isWinner,
+  }) {
+    return Row(
+      children: [
+        _teamLogo(teamImage),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            teamName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: isWinner ? Colors.white : Colors.white70,
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        Text(
+          score,
+          style: TextStyle(
+            color: isWinner ? Colors.white : Colors.white70,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 
-  Color _winColor(String score, String opponentScore) {
-    final cur = int.tryParse(score) ?? 0;
-    final opp = int.tryParse(opponentScore) ?? 0;
-    return cur > opp ? Colors.white : Colors.white70;
-  }
+  int _scoreValue(String score) => int.tryParse(score) ?? 0;
 }

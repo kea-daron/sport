@@ -43,9 +43,9 @@ class OverviewTab extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF171717),
+        color: const Color.fromARGB(255, 0, 0, 0),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: const Color.fromARGB(255, 111, 48, 48).withOpacity(0.08)),
       ),
       child: Column(
         children: [
@@ -139,7 +139,7 @@ class OverviewTab extends StatelessWidget {
   Widget _buildDetailSection(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF171717),
+        color: const Color.fromARGB(255, 0, 0, 0),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),
@@ -234,7 +234,7 @@ class OverviewTab extends StatelessWidget {
 
         return Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF171717),
+            color: const Color.fromARGB(255, 0, 0, 0),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.white.withOpacity(0.08)),
           ),

@@ -86,7 +86,7 @@ class _ScoreHeader extends StatelessWidget {
     final awayColor = _hexColor(awayTeam['firstColor']);
 
     return Container(
-      color: const Color(0xFF1A1A2E),
+      color: const Color.fromARGB(255, 0, 0, 0),
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       child: Column(
         children: [
@@ -374,7 +374,7 @@ class _TimelineIncidents extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = _buildTimeline();
     return Container(
-      color: const Color(0xFF12121C),
+      color: const Color.fromARGB(255, 0, 0, 0),
       child: Column(
         children: items.map((item) {
           if (item.isDivider) {

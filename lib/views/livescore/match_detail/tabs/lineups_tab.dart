@@ -421,33 +421,57 @@ class LineupsTab extends StatelessWidget {
     required List<Map<String, dynamic>> awayPlayers,
     String emptyLabel = 'No player details available',
   }) {
+    final isInjuriesSection = title.toUpperCase() == 'INJURIES';
+
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF171717),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(isInjuriesSection ? 18 : 12),
         border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(isInjuriesSection ? 22 : 16),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final homeColumn = _buildLineupDetailColumn(label: 'HOME', players: homePlayers, isHome: true, emptyLabel: emptyLabel);
-            final awayColumn = _buildLineupDetailColumn(label: 'AWAY', players: awayPlayers, isHome: false, emptyLabel: emptyLabel);
+            final homeColumn = _buildLineupDetailColumn(
+              label: 'HOME',
+              players: homePlayers,
+              isHome: true,
+              emptyLabel: emptyLabel,
+              showInjuryStyle: isInjuriesSection,
+            );
+            final awayColumn = _buildLineupDetailColumn(
+              label: 'AWAY',
+              players: awayPlayers,
+              isHome: false,
+              emptyLabel: emptyLabel,
+              showInjuryStyle: isInjuriesSection,
+            );
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.0)),
-                ),
+                if (isInjuriesSection)
+                  Text(
+                    'Injuries',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  )
+                else
+                  Center(
+                    child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.0)),
+                  ),
                 const SizedBox(height: 16),
                 Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Expanded(child: homeColumn),
                   Container(
                     width: 1,
                     height: math.max(240, math.max(homePlayers.length, awayPlayers.length) * 56).toDouble(),
-                    margin: const EdgeInsets.symmetric(horizontal: 12),
-                    color: Colors.white.withOpacity(0.08),
+                    margin: EdgeInsets.symmetric(horizontal: isInjuriesSection ? 16 : 12),
+                    color: Colors.white.withOpacity(isInjuriesSection ? 0.04 : 0.08),
                   ),
                   Expanded(child: awayColumn),
                 ]),
@@ -464,6 +488,7 @@ class LineupsTab extends StatelessWidget {
     required List<Map<String, dynamic>> players,
     required bool isHome,
     required String emptyLabel,
+    bool showInjuryStyle = false,
   }) {
     return Column(
       crossAxisAlignment: isHome ? CrossAxisAlignment.start : CrossAxisAlignment.end,
@@ -478,8 +503,104 @@ class LineupsTab extends StatelessWidget {
                 style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 12)),
           )
         else
-          Column(children: players.map((p) => _buildLineupDetailRow(p, isHome: isHome)).toList()),
+          Column(
+            children: players
+                .map((p) => showInjuryStyle
+                    ? _buildInjuryDetailRow(p, isHome: isHome)
+                    : _buildLineupDetailRow(p, isHome: isHome))
+                .toList(),
+          ),
       ],
+    );
+  }
+
+  Widget _buildInjuryDetailRow(Map<String, dynamic> player, {required bool isHome}) {
+    final name = _lineupPlayerName(player);
+    final details = _lineupPlayerDetailText(player);
+    final initials = H.initials(name);
+    final issue = details.isEmpty ? 'Unavailable' : details;
+
+    final avatar = Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white.withOpacity(0.08),
+            border: Border.all(color: Colors.white.withOpacity(0.06)),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            initials,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        Positioned(
+          right: -2,
+          bottom: -2,
+          child: Container(
+            width: 18,
+            height: 18,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFFE91E63),
+              border: Border.all(color: const Color(0xFF171717), width: 2),
+            ),
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.add,
+              size: 11,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ],
+    );
+
+    final textBlock = Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            issue,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.68),
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              height: 1.2,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: isHome
+            ? [avatar, const SizedBox(width: 12), textBlock]
+            : [textBlock, const SizedBox(width: 12), avatar],
+      ),
     );
   }
 
