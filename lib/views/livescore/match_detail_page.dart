@@ -5,12 +5,12 @@ import '../../services/live_score_service.dart';
 import '../../theme/app_palette.dart';
 import '../../widgets/app_skeleton.dart';
 
-import 'match_detail/tabs/overview_tab.dart';
-import 'match_detail/tabs/summary_tab.dart';
-import 'match_detail/tabs/lineups_tab.dart';
-import 'match_detail/tabs/statistics_tab.dart';
-import 'match_detail/tabs/table_tab.dart';
 import 'match_detail/tabs/h2h_tab.dart';
+import 'match_detail/tabs/lineups_tab.dart';
+import 'match_detail/tabs/overview_tab.dart';
+import 'match_detail/tabs/statistics_tab.dart';
+import 'match_detail/tabs/summary_tab.dart';
+import 'match_detail/tabs/table_tab.dart';
 
 class MatchDetailPage extends StatefulWidget {
   final MatchItem match;
@@ -30,19 +30,24 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
   final LiveScoreService _liveScoreService = const LiveScoreService();
 
   late Future<Map<String, dynamic>> _detailFuture;
-  late Future<Map<String, dynamic>> _scoreboardFuture;
-  late Future<Map<String, dynamic>> _lineupsFuture;
-  late Future<Map<String, dynamic>> _incidentsFuture;
-  late Future<Map<String, dynamic>> _statisticsFuture;
-  late Future<Map<String, dynamic>> _tableFuture;
-  late Future<Map<String, dynamic>> _h2hFuture;
-  late Future<Map<String, dynamic>> _homeTeamDetailFuture;
-  late Future<Map<String, dynamic>> _awayTeamDetailFuture;
+  Future<Map<String, dynamic>>? _scoreboardFuture;
+  Future<Map<String, dynamic>>? _lineupsFuture;
+  Future<Map<String, dynamic>>? _incidentsFuture;
+  Future<Map<String, dynamic>>? _statisticsFuture;
+  Future<Map<String, dynamic>>? _tableFuture;
+  Future<Map<String, dynamic>>? _h2hFuture;
+  Future<Map<String, dynamic>>? _homeTeamDetailFuture;
+  Future<Map<String, dynamic>>? _awayTeamDetailFuture;
 
   int _selectedTab = 0;
 
   static const _tabs = [
-    'OVERVIEW', 'SUMMARY', 'LINEUPS', 'STATISTICS', 'TABLE', 'H2H',
+    'OVERVIEW',
+    'SUMMARY',
+    'LINEUPS',
+    'STATISTICS',
+    'TABLE',
+    'H2H',
   ];
 
   @override
@@ -52,29 +57,59 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
   }
 
   void _initFutures() {
-    // ✅ Each future assigned to correct variable
     _detailFuture = _liveScoreService.fetchMatchDetail(
-        eid: widget.match.eid, category: widget.category);
+      eid: widget.match.eid,
+      category: widget.category,
+    );
+    _scoreboardFuture = null;
+    _lineupsFuture = null;
+    _incidentsFuture = null;
+    _statisticsFuture = null;
+    _tableFuture = null;
+    _h2hFuture = null;
+    _homeTeamDetailFuture = null;
+    _awayTeamDetailFuture = null;
+    _ensureTabDataLoaded(_selectedTab);
+  }
 
-    _scoreboardFuture = _liveScoreService.fetchScoreboard(
-        eid: widget.match.eid, category: widget.category);
-
-    _incidentsFuture = _liveScoreService.fetchIncidents(  // ✅ correctly assigned
-        eid: widget.match.eid, category: widget.category);
-
-    _lineupsFuture = _liveScoreService.fetchLineups(
-        eid: widget.match.eid, category: widget.category);
-
-    _statisticsFuture = _liveScoreService.fetchStatistics(
-        eid: widget.match.eid, category: widget.category);
-
-    _tableFuture = _loadLeagueTable();
-
-    _h2hFuture = _liveScoreService.fetchH2H(
-        eid: widget.match.eid, category: widget.category);
-
-    _homeTeamDetailFuture = _loadTeamDetail(widget.match.homeTeamId);
-    _awayTeamDetailFuture = _loadTeamDetail(widget.match.awayTeamId);
+  void _ensureTabDataLoaded(int tabIndex) {
+    switch (tabIndex) {
+      case 0:
+        _homeTeamDetailFuture ??= _loadTeamDetail(widget.match.homeTeamId);
+        _awayTeamDetailFuture ??= _loadTeamDetail(widget.match.awayTeamId);
+        break;
+      case 1:
+        _scoreboardFuture ??= _liveScoreService.fetchScoreboard(
+          eid: widget.match.eid,
+          category: widget.category,
+        );
+        _incidentsFuture ??= _liveScoreService.fetchIncidents(
+          eid: widget.match.eid,
+          category: widget.category,
+        );
+        break;
+      case 2:
+        _lineupsFuture ??= _liveScoreService.fetchLineups(
+          eid: widget.match.eid,
+          category: widget.category,
+        );
+        break;
+      case 3:
+        _statisticsFuture ??= _liveScoreService.fetchStatistics(
+          eid: widget.match.eid,
+          category: widget.category,
+        );
+        break;
+      case 4:
+        _tableFuture ??= _loadLeagueTable();
+        break;
+      case 5:
+        _h2hFuture ??= _liveScoreService.fetchH2H(
+          eid: widget.match.eid,
+          category: widget.category,
+        );
+        break;
+    }
   }
 
   Future<Map<String, dynamic>> _loadLeagueTable() async {
@@ -97,6 +132,13 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
 
   void _reloadAllData() {
     setState(_initFutures);
+  }
+
+  void _selectTab(int index) {
+    setState(() {
+      _selectedTab = index;
+      _ensureTabDataLoaded(index);
+    });
   }
 
   @override
@@ -134,8 +176,6 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     );
   }
 
-  // ── Tab bar ───────────────────────────────────────────────────────────────
-
   Widget _buildTabBar() {
     return Container(
       decoration: BoxDecoration(
@@ -150,11 +190,12 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
           children: List.generate(_tabs.length, (index) {
             final selected = _selectedTab == index;
             return GestureDetector(
-              onTap: () => setState(() => _selectedTab = index),
+              onTap: () => _selectTab(index),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 6),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: selected
                       ? Colors.yellow.shade600.withOpacity(0.14)
@@ -186,58 +227,54 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
     );
   }
 
-  // ── Tab content router ────────────────────────────────────────────────────
-
   Widget _buildTabContent(Map<String, dynamic> detail) {
     switch (_selectedTab) {
       case 0:
         return OverviewTab(
           match: widget.match,
           detail: detail,
-          homeTeamDetailFuture: _homeTeamDetailFuture,
-          awayTeamDetailFuture: _awayTeamDetailFuture,
+          homeTeamDetailFuture: _homeTeamDetailFuture!,
+          awayTeamDetailFuture: _awayTeamDetailFuture!,
         );
       case 1:
         return SummaryTab(
           match: widget.match,
           detail: detail,
-          scoreboardFuture: _scoreboardFuture,
-          incidentsFuture: _incidentsFuture,
+          scoreboardFuture: _scoreboardFuture!,
+          incidentsFuture: _incidentsFuture!,
         );
       case 2:
         return LineupsTab(
           match: widget.match,
           category: widget.category,
-          lineupsFuture: _lineupsFuture,
+          lineupsFuture: _lineupsFuture!,
         );
       case 3:
         return StatisticsTab(
           match: widget.match,
           category: widget.category,
-          statisticsFuture: _statisticsFuture,
+          statisticsFuture: _statisticsFuture!,
         );
       case 4:
         return TableTab(
           match: widget.match,
-          tableFuture: _tableFuture,
+          tableFuture: _tableFuture!,
         );
       case 5:
         return H2HTab(
           match: widget.match,
           category: widget.category,
-          h2hFuture: _h2hFuture,
+          h2hFuture: _h2hFuture!,
         );
       default:
         return OverviewTab(
           match: widget.match,
           detail: detail,
-          homeTeamDetailFuture: _homeTeamDetailFuture,
-          awayTeamDetailFuture: _awayTeamDetailFuture,
+          homeTeamDetailFuture: _homeTeamDetailFuture!,
+          awayTeamDetailFuture: _awayTeamDetailFuture!,
         );
     }
   }
-
-  // ── Error widget ──────────────────────────────────────────────────────────
 
   Widget _buildErrorWidget(String error) {
     return Center(
@@ -248,23 +285,33 @@ class _MatchDetailPageState extends State<MatchDetailPage> {
           children: [
             Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
             const SizedBox(height: 16),
-            const Text('Failed to load match details',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600)),
+            const Text(
+              'Failed to load match details',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const SizedBox(height: 8),
-            Text(error,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    color: Colors.white.withOpacity(0.6), fontSize: 13)),
+            Text(
+              error,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.6),
+                fontSize: 13,
+              ),
+            ),
             const SizedBox(height: 24),
             OutlinedButton(
               onPressed: _reloadAllData,
               style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: Colors.yellow.shade600)),
-              child: Text('Retry',
-                  style: TextStyle(color: Colors.yellow.shade600)),
+                side: BorderSide(color: Colors.yellow.shade600),
+              ),
+              child: Text(
+                'Retry',
+                style: TextStyle(color: Colors.yellow.shade600),
+              ),
             ),
           ],
         ),

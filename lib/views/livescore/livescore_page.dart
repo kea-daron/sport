@@ -280,7 +280,7 @@ class _LiveScorePageState extends State<LiveScorePage> {
               ),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 15),
           Text(
             _isLiveMode
                 ? 'Pick a sport to track matches in real time.'
@@ -582,34 +582,34 @@ class _LiveScorePageState extends State<LiveScorePage> {
             child: Row(
               children: [
                 Container(
-                  width: 28,
-                  height: 28,
+                  width: 35,
+                  height: 35,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.yellow.shade600,
-                      width: 1.2,
-                    ),
+                    borderRadius: BorderRadius.circular(7),
+                    
                   ),
                   clipBehavior: Clip.antiAlias,
-                  child: Image.network(
-                    'https://getimage.membertsd.workers.dev/?url=https://storage.livescore.com/images/flag/${firstMatch.countryCode}.jpg',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.yellow.shade600.withOpacity(0.2),
-                        child: Center(
-                          child: Text(
-                            _initials(competition),
-                            style: TextStyle(
-                              color: Colors.yellow.shade600,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
+                  child: Padding(
+                    padding: const EdgeInsets.all(3),
+                    child: Image.network(
+                      'https://getimage.membertsd.workers.dev/?url=https://storage.livescore.com/images/flag/${firstMatch.countryCode}.jpg',
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.yellow.shade600.withOpacity(0.2),
+                          child: Center(
+                            child: Text(
+                              _initials(competition),
+                              style: TextStyle(
+                                color: Colors.yellow.shade600,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -639,11 +639,7 @@ class _LiveScorePageState extends State<LiveScorePage> {
                     ],
                   ),
                 ),
-                Icon(
-                  Icons.arrow_forward_ios,
-                  color: Colors.yellow.shade600,
-                  size: 12,
-                ),
+                
               ],
             ),
           ),
@@ -689,7 +685,7 @@ class _LiveScorePageState extends State<LiveScorePage> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 5),
                 Container(width: 1.5, height: 32, color: Colors.white24),
               ],
             ),
@@ -735,8 +731,8 @@ class _LiveScorePageState extends State<LiveScorePage> {
     final imageUrl = _teamImageUrl(teamImage);
 
     return Container(
-      width: 24,
-      height: 24,
+      width: 20,
+      height: 20,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: Colors.white.withOpacity(0.08),
@@ -760,7 +756,7 @@ class _LiveScorePageState extends State<LiveScorePage> {
         _initials(teamName),
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 10,
+          fontSize: 8,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -776,7 +772,7 @@ class _LiveScorePageState extends State<LiveScorePage> {
     return Row(
       children: [
         _buildTeamBadge(teamName: teamName, teamImage: teamImage),
-        const SizedBox(width: 6),
+        const SizedBox(width: 5),
         Expanded(
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -788,7 +784,7 @@ class _LiveScorePageState extends State<LiveScorePage> {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 11,
+                    fontSize: 10,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

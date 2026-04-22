@@ -284,7 +284,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildLiveMatch() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -370,14 +370,14 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildShowMoreLeaguesButton() {
     return Padding(
-      padding: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.only(top: 1),
       child: SizedBox(
         width: double.infinity,
         child: OutlinedButton(
           onPressed: _showMoreLeagues,
           style: OutlinedButton.styleFrom(
             side: BorderSide(color: Colors.yellow.shade600),
-            padding: const EdgeInsets.symmetric(vertical: 14),
+            padding: const EdgeInsets.symmetric(vertical: 1),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
@@ -460,38 +460,40 @@ class _HomePageState extends State<HomePage> {
         children: [
           // League Header
           Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: 4),
             child: Row(
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 35,
+                  height: 35,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.yellow.shade600, width: 2),
+                    borderRadius: BorderRadius.circular(7),
                   ),
                   clipBehavior: Clip.antiAlias,
-                  child: Image.network(
-                    'https://getimage.membertsd.workers.dev/?url=https://storage.livescore.com/images/flag/${firstMatch.countryCode}.jpg',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.yellow.shade600.withOpacity(0.2),
-                        child: Center(
-                          child: Text(
-                            _initials(competition),
-                            style: TextStyle(
-                              color: Colors.yellow.shade600,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
+                  child: Padding(
+                    padding: const EdgeInsets.all(3),
+                    child: Image.network(
+                      'https://getimage.membertsd.workers.dev/?url=https://storage.livescore.com/images/flag/${firstMatch.countryCode}.jpg',
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.yellow.shade600.withOpacity(0.2),
+                          child: Center(
+                            child: Text(
+                              _initials(competition),
+                              style: TextStyle(
+                                color: Colors.yellow.shade600,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -502,27 +504,21 @@ class _HomePageState extends State<HomePage> {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 14,
+                          fontSize: 10,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 1),
                       Text(
                         firstMatch.country,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white70,
-                          fontSize: 11,
+                          fontSize: 8,
                         ),
                       ),
                     ],
                   ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios,
-                  color: Colors.yellow.shade600,
-                  size: 18,
                 ),
               ],
             ),
@@ -532,7 +528,7 @@ class _HomePageState extends State<HomePage> {
             (match) => GestureDetector(
               onTap: () => _navigateToMatchDetail(match),
               child: Padding(
-                padding: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.only(bottom: 6),
                 child: _buildSimpleMatchCard(match),
               ),
             ),
@@ -560,11 +556,11 @@ class _HomePageState extends State<HomePage> {
     final showScores = match.homeScore.isNotEmpty && match.awayScore.isNotEmpty;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 0, 0, 0),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -583,7 +579,7 @@ class _HomePageState extends State<HomePage> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 5),
                 Container(width: 1.5, height: 32, color: Colors.white24),
               ],
             ),
@@ -691,8 +687,8 @@ class _HomePageState extends State<HomePage> {
     final imageUrl = _teamImageUrl(teamImage);
 
     return Container(
-      width: 24,
-      height: 24,
+      width: 20,
+      height: 20,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: Colors.white.withOpacity(0.08),

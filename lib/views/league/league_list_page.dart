@@ -216,26 +216,30 @@ class _LeagueListPageState extends State<LeagueListPage> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.white,
                   border: Border.all(
                     color: Colors.white.withOpacity(0.1),
                     width: 1,
                   ),
                 ),
                 clipBehavior: Clip.antiAlias,
-                child: Image.network(
-                  'https://getimage.membertsd.workers.dev/?url=https://storage.livescore.com/images/flag/${league.ccd}.jpg',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: Colors.white.withOpacity(0.08),
-                      child: Icon(
-                        Icons.emoji_events_outlined,
-                        color: Colors.yellow.shade600,
-                        size: 20,
-                      ),
-                    );
-                  },
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: Image.network(
+                    'https://getimage.membertsd.workers.dev/?url=https://storage.livescore.com/images/flag/${league.ccd}.jpg',
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.white.withOpacity(0.08),
+                        child: Icon(
+                          Icons.emoji_events_outlined,
+                          color: Colors.yellow.shade600,
+                          size: 20,
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -296,7 +300,7 @@ class _LeagueListPageState extends State<LeagueListPage> {
               height: 44,
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.08),
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
             const SizedBox(width: 12),

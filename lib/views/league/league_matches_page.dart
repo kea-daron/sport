@@ -419,13 +419,13 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
     return Row(
       children: [
         _buildTeamBadge(teamName: teamName, teamImage: teamImage),
-        const SizedBox(width: 8),
+        const SizedBox(width: 5),
         Expanded(
           child: Text(
             teamName,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 13,
+              fontSize: 11,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -450,8 +450,8 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
     final imageUrl = _teamImageUrl(teamImage);
 
     return Container(
-      width: 28,
-      height: 28,
+      width: 18,
+      height: 18,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: Colors.white.withOpacity(0.08),
@@ -475,7 +475,7 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
         _initials(teamName),
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 10,
+          fontSize: 8,
           fontWeight: FontWeight.w700,
         ),
       ),
