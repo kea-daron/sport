@@ -153,13 +153,6 @@ class _SearchPageState extends State<SearchPage> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.yellow.shade600.withOpacity(0.1),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: TextField(
         controller: _queryController,
@@ -182,25 +175,17 @@ class _SearchPageState extends State<SearchPage> {
             padding: const EdgeInsets.only(left: 16),
             child: Icon(
               Icons.search,
-              color: Colors.yellow.shade600,
+              color: Colors.white54,
               size: 28,
             ),
           ),
           prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
           suffixIcon: IconButton(
             onPressed: _submitSearch,
-            icon: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.yellow.shade600,
-                    Colors.yellow.shade700,
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: const EdgeInsets.all(8),
-              child: const Icon(Icons.arrow_forward, color: Colors.black, size: 18),
+            icon: Icon(
+              Icons.arrow_forward,
+              color: Colors.white54,
+              size: 20,
             ),
           ),
           border: OutlineInputBorder(
@@ -217,8 +202,8 @@ class _SearchPageState extends State<SearchPage> {
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(20),
             borderSide: BorderSide(
-              color: Colors.yellow.shade600,
-              width: 2,
+              color: Colors.white38,
+              width: 1.5,
             ),
           ),
           contentPadding: const EdgeInsets.symmetric(
@@ -258,34 +243,16 @@ class _SearchPageState extends State<SearchPage> {
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  gradient: isSelected
-                      ? LinearGradient(
-                          colors: [
-                            Colors.yellow.shade600,
-                            Colors.yellow.shade700,
-                          ],
-                        )
-                      : LinearGradient(
-                          colors: [
-                            const Color(0xFF1E1E1E),
-                            const Color(0xFF161616),
-                          ],
-                        ),
+                  color: isSelected
+                      ? Colors.white12
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
                     color: isSelected
-                        ? Colors.yellow.shade600
-                        : Colors.white.withOpacity(0.1),
+                        ? Colors.white38
+                        : Colors.white12,
                     width: 1.5,
                   ),
-                  boxShadow: [
-                    if (isSelected)
-                      BoxShadow(
-                        color: Colors.yellow.shade600.withOpacity(0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                  ],
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -293,13 +260,13 @@ class _SearchPageState extends State<SearchPage> {
                     Icon(
                       category.icon,
                       size: 20,
-                      color: isSelected ? Colors.black : Colors.yellow.shade600,
+                      color: Colors.white70,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       category.label,
-                      style: TextStyle(
-                        color: isSelected ? Colors.black : Colors.white,
+                      style: const TextStyle(
+                        color: Colors.white,
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
                       ),
@@ -368,12 +335,6 @@ class _SearchPageState extends State<SearchPage> {
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
-              if (canOpen)
-                BoxShadow(
-                  color: Colors.yellow.shade600.withOpacity(0.1),
-                  blurRadius: 16,
-                  offset: const Offset(0, 2),
-                ),
             ],
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -384,9 +345,7 @@ class _SearchPageState extends State<SearchPage> {
               ],
             ),
             border: Border.all(
-              color: canOpen
-                  ? Colors.yellow.shade600.withOpacity(0.2)
-                  : Colors.white.withOpacity(0.05),
+              color: Colors.white.withOpacity(0.1),
               width: 1.5,
             ),
           ),
@@ -431,21 +390,16 @@ class _SearchPageState extends State<SearchPage> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.yellow.shade600.withOpacity(0.2),
-                                Colors.yellow.shade700.withOpacity(0.1),
-                              ],
-                            ),
+                            color: Colors.white10,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: Colors.yellow.shade600.withOpacity(0.3),
+                              color: Colors.white12,
                             ),
                           ),
                           child: Text(
                             '${result.homeTeam}${result.awayTeam.isNotEmpty ? ' vs ${result.awayTeam}' : ''}',
-                            style: TextStyle(
-                              color: Colors.yellow.shade400,
+                            style: const TextStyle(
+                              color: Colors.white70,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -464,7 +418,7 @@ class _SearchPageState extends State<SearchPage> {
                     Icon(
                       canOpen ? Icons.arrow_forward_ios : Icons.info_outline,
                       size: 18,
-                      color: canOpen ? Colors.yellow.shade600 : Colors.white30,
+                      color: Colors.white54,
                     ),
                   ],
                 ),
@@ -484,7 +438,7 @@ class _SearchPageState extends State<SearchPage> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: Colors.yellow.shade600.withOpacity(0.2),
+            color: Colors.white12,
             width: 1.5,
           ),
           boxShadow: [
@@ -513,30 +467,23 @@ class _SearchPageState extends State<SearchPage> {
       height: 56,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.yellow.shade600.withOpacity(0.2),
-            Colors.yellow.shade700.withOpacity(0.1),
-          ],
-        ),
+        color: Colors.white12,
         border: Border.all(
-          color: Colors.yellow.shade600.withOpacity(0.3),
+          color: Colors.white12,
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.yellow.shade600.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.2),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Center(
+      child: const Center(
         child: Icon(
           Icons.sports,
-          color: Colors.yellow.shade600,
+          color: Colors.white54,
           size: 28,
         ),
       ),
@@ -548,22 +495,17 @@ class _SearchPageState extends State<SearchPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.yellow.shade600.withOpacity(0.15),
-            Colors.yellow.shade700.withOpacity(0.05),
-          ],
-        ),
+        color: Colors.white12,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: Colors.yellow.shade600.withOpacity(0.3),
+          color: Colors.white,
           width: 1,
         ),
       ),
       child: Text(
         normalized.toUpperCase(),
-        style: TextStyle(
-          color: Colors.yellow.shade400,
+        style: const TextStyle(
+          color: Colors.white70,
           fontSize: 11,
           fontWeight: FontWeight.w800,
           letterSpacing: 0.4,
@@ -587,7 +529,7 @@ class _SearchPageState extends State<SearchPage> {
           ],
         ),
         border: Border.all(
-          color: Colors.yellow.shade600.withOpacity(0.15),
+          color: Colors.white12,
           width: 1.5,
         ),
         boxShadow: [
@@ -607,7 +549,7 @@ class _SearchPageState extends State<SearchPage> {
                 width: 4,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: Colors.yellow.shade600,
+                  color: Colors.white38,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
