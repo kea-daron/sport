@@ -479,7 +479,7 @@ class _IncidentRow extends StatelessWidget {
             alignment: Alignment.center,
             child: Container(
               padding:
-              const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               decoration: BoxDecoration(
                 color: isGoal ? Colors.white : const Color(0xFF2A2A3E),
                 borderRadius: BorderRadius.circular(20),
@@ -489,7 +489,7 @@ class _IncidentRow extends StatelessWidget {
                 style: TextStyle(
                   color: isGoal ? Colors.black : Colors.white70,
                   fontWeight: FontWeight.bold,
-                  fontSize: 12,
+                  fontSize: 10,
                 ),
               ),
             ),
@@ -542,7 +542,7 @@ class _EventContent extends StatelessWidget {
           width: 14,
           height: 18,
           decoration: BoxDecoration(
-              color: Colors.orange,
+              color: const Color.fromARGB(255, 227, 8, 8),
               borderRadius: BorderRadius.circular(2)));
     }
     if (type == 45) {
@@ -584,14 +584,14 @@ class _EventContent extends StatelessWidget {
           textAlign: isHome ? TextAlign.right : TextAlign.left,
           style: const TextStyle(
               color: Colors.white,
-              fontSize: 14,
+              fontSize: 10,
               fontWeight: FontWeight.w500),
         ),
         if (assistName != null && assistName!.isNotEmpty)
           Text(
             assistName!,
             textAlign: isHome ? TextAlign.right : TextAlign.left,
-            style: const TextStyle(color: Colors.white38, fontSize: 12),
+            style: const TextStyle(color: Colors.white38, fontSize: 10),
           ),
       ],
     );

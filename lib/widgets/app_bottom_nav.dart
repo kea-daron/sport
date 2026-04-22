@@ -25,7 +25,7 @@ class AppBottomNav extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
@@ -119,12 +119,9 @@ class AppBottomNav extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.yellow.shade600.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: Colors.yellow.shade600.withOpacity(0.4),
-                width: 1.5,
-              ),
+              color: Colors.yellow.shade300.withOpacity(0.25),
+              borderRadius: BorderRadius.circular(30),
+              
             ),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             child: Column(
@@ -132,14 +129,14 @@ class AppBottomNav extends StatelessWidget {
               children: [
                 Icon(
                   Icons.search,
-                  color: Colors.yellow.shade600,
+                  color: Colors.yellow.shade300,
                   size: 26,
                 ),
                 const SizedBox(height: 1),
                 Text(
                   'Search',
                   style: TextStyle(
-                    color: Colors.yellow.shade600,
+                    color: Colors.yellow.shade300,
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                   ),

@@ -252,11 +252,6 @@ class _LiveScorePageState extends State<LiveScorePage> {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1A1A1A), Color(0xFF26210F)],
-        ),
         border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),
       child: Column(

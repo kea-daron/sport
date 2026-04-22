@@ -217,15 +217,11 @@ class _LeagueListPageState extends State<LeagueListPage> {
                 height: 44,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
-                  color: Colors.white,
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.1),
-                    width: 1,
-                  ),
+                  
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: Padding(
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.all(2),
                   child: Image.network(
                     'https://getimage.membertsd.workers.dev/?url=https://storage.livescore.com/images/flag/${league.ccd}.jpg',
                     fit: BoxFit.contain,

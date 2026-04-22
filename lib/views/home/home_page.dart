@@ -374,7 +374,7 @@ class _HomePageState extends State<HomePage> {
           onPressed: _showMoreLeagues,
           style: OutlinedButton.styleFrom(
             side: BorderSide(color: Colors.yellow.shade600),
-            padding: const EdgeInsets.symmetric(vertical: 1),
+            padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),

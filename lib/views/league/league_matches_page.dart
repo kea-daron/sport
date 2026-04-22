@@ -128,11 +128,6 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1A1A1A), Color(0xFF26210F)],
-        ),
         border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),
       child: Column(
@@ -368,7 +363,7 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SizedBox(
-            width: 44,
+            width: 32,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.center,
@@ -377,16 +372,16 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
                   _statusLabel(match),
                   style: const TextStyle(
                     color: Colors.white70,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Container(width: 2, height: 40, color: Colors.white24),
+                const SizedBox(width: 6),
+                Container(width: 1.5, height: 34, color: Colors.white24),
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               children: [
@@ -435,7 +430,7 @@ class _LeagueMatchesPageState extends State<LeagueMatchesPage> {
             score,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 20,
+              fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
           ),
