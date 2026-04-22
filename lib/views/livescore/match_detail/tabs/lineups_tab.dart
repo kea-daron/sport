@@ -431,7 +431,6 @@ class LineupsTab extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final isCompact = constraints.maxWidth < 760;
             final homeColumn = _buildLineupDetailColumn(label: 'HOME', players: homePlayers, isHome: true, emptyLabel: emptyLabel);
             final awayColumn = _buildLineupDetailColumn(label: 'AWAY', players: awayPlayers, isHome: false, emptyLabel: emptyLabel);
 
@@ -442,19 +441,16 @@ class LineupsTab extends StatelessWidget {
                   child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.0)),
                 ),
                 const SizedBox(height: 16),
-                if (isCompact) ...[
-                  homeColumn, const SizedBox(height: 16), awayColumn,
-                ] else
-                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Expanded(child: homeColumn),
-                    Container(
-                      width: 1,
-                      height: math.max(240, math.max(homePlayers.length, awayPlayers.length) * 56).toDouble(),
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      color: Colors.white.withOpacity(0.08),
-                    ),
-                    Expanded(child: awayColumn),
-                  ]),
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(child: homeColumn),
+                  Container(
+                    width: 1,
+                    height: math.max(240, math.max(homePlayers.length, awayPlayers.length) * 56).toDouble(),
+                    margin: const EdgeInsets.symmetric(horizontal: 12),
+                    color: Colors.white.withOpacity(0.08),
+                  ),
+                  Expanded(child: awayColumn),
+                ]),
               ],
             );
           },
