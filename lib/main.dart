@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'config/api_config.dart';
 import 'theme/app_palette.dart';
-// import 'views/welcome/welcome_page.dart';
+
 import 'views/home/home_page.dart';
 import 'views/livescore/livescore_page.dart';
 import 'views/news/news_page.dart';

@@ -541,7 +541,12 @@ class LiveScoreService {
       );
     }
 
-    final dynamic decoded = jsonDecode(response.body);
+    final body = response.body.trim();
+    if (body.isEmpty || body == '{}' || body == '[]') {
+      return const [];
+    }
+
+    final dynamic decoded = jsonDecode(body);
     final newsItems = _extractNewsItems(decoded).toList();
     _cache.set(cacheKey, newsItems, ttl: const Duration(minutes: 15));
     return newsItems;
@@ -1844,6 +1849,7 @@ class LiveScoreService {
 
   bool _looksLikeFallbackNewsNode(Map<String, dynamic> node) {
     final title = _readString(node, const [
+      'ttl',
       'title',
       'headline',
       'articleTitle',
@@ -1854,6 +1860,7 @@ class LiveScoreService {
       'snm',
     ]);
     final image = _readString(node, const [
+      'tnUrl',
       'mainMedia.gallery.url',
       'mainMedia.thumbnail.url',
       'image',
@@ -2063,6 +2070,7 @@ class LiveScoreService {
       'nid',
     ]);
     final headline = _readString(raw, const [
+      'ttl',
       'title',
       'headline',
       'articleTitle',
@@ -2081,6 +2089,7 @@ class LiveScoreService {
       id: id,
       headline: headline,
       summary: _readString(raw, const [
+        'sum',
         'subTitle',
         'subtitle',
         'summary',
@@ -2093,6 +2102,7 @@ class LiveScoreService {
       ]),
       imageUrl: _normalizeNewsImageUrl(
         _readString(raw, const [
+          'tnUrl',
           'mainMedia.gallery.url',
           'mainMedia.thumbnail.url',
           'image',
@@ -2108,6 +2118,8 @@ class LiveScoreService {
         ]),
       ),
       source: _readString(raw, const [
+        'oTtl',
+        'athr',
         'publishedBy.name',
         'source',
         'provider',
@@ -2117,6 +2129,7 @@ class LiveScoreService {
         'prv',
       ], fallback: 'LiveScore'),
       publishedAt: _readString(raw, const [
+        'pbAt',
         'publishedAt',
         'updatedAtUtc',
         'publishedDate',
@@ -2127,6 +2140,8 @@ class LiveScoreService {
         'ut',
       ]),
       category: _readString(raw, const [
+        'fd.ttl',
+        'fd.tp',
         'categoryLabel',
         'category.initialTitle',
         'category.title',
@@ -2166,6 +2181,7 @@ class LiveScoreService {
 
     final source = bestNode ?? <String, dynamic>{};
     final headline = _readString(source, const [
+      'ttl',
       'title',
       'headline',
       'articleTitle',
@@ -2178,6 +2194,7 @@ class LiveScoreService {
     ], fallback: fallback?.headline ?? '');
 
     final summary = _readString(source, const [
+      'sum',
       'subTitle',
       'subtitle',
       'summary',
@@ -2216,6 +2233,7 @@ class LiveScoreService {
       content: content,
       imageUrl: _normalizeNewsImageUrl(
         _readString(source, const [
+          'tnUrl',
           'mainMedia.gallery.url',
           'mainMedia.thumbnail.url',
           'image',
@@ -2231,6 +2249,8 @@ class LiveScoreService {
         ], fallback: fallback?.imageUrl ?? ''),
       ),
       source: _readString(source, const [
+        'oTtl',
+        'athr',
         'publishedBy.name',
         'source',
         'provider',
@@ -2240,6 +2260,7 @@ class LiveScoreService {
         'prv',
       ], fallback: fallback?.source ?? 'LiveScore'),
       publishedAt: _readString(source, const [
+        'pbAt',
         'publishedAt',
         'updatedAtUtc',
         'publishedDate',
@@ -2250,6 +2271,8 @@ class LiveScoreService {
         'ut',
       ], fallback: fallback?.publishedAt ?? ''),
       category: _readString(source, const [
+        'fd.ttl',
+        'fd.tp',
         'categoryLabel',
         'category.initialTitle',
         'category.title',
@@ -2394,15 +2417,19 @@ class LiveScoreService {
 
     final normalized = trimmed.startsWith('//') ? 'https:$trimmed' : trimmed;
 
-    final sourceUrl = normalized.startsWith('http')
-        ? normalized
-        : normalized.startsWith('/')
-        ? 'https://storage.livescore.com$normalized'
-        : normalized.contains('/')
-        ? 'https://storage.livescore.com/$normalized'
-        : 'https://storage.livescore.com/images/news/$normalized';
+    if (normalized.startsWith('http')) {
+      return normalized;
+    }
 
-    return 'https://getimage.membertsd.workers.dev/?url=${Uri.encodeComponent(sourceUrl)}';
+    if (normalized.startsWith('/')) {
+      return 'https://storage.livescore.com$normalized';
+    }
+
+    if (normalized.contains('/')) {
+      return 'https://storage.livescore.com/$normalized';
+    }
+
+    return 'https://storage.livescore.com/images/news/$normalized';
   }
 
   String _normalizeNewsContent(String value, {String fallback = ''}) {
